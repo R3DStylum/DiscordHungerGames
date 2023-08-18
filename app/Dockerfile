@@ -29,6 +29,8 @@ COPY . .
 # Build the app using npm
 RUN npm run build
 
+# COPY ./src/.env ./build/.env
+
 # Run the application as a non-root user.
 USER node
 
