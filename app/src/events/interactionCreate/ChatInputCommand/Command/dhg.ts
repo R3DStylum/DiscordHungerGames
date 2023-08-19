@@ -2,9 +2,10 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashComma
 import { Command } from "./Command";
 import { DHGManager } from "../../../../classes/DHGManager";
 
-export class Dhg extends Command{
+export class dhg extends Command{
     builder = new SlashCommandBuilder()
         .setName('dhg')
+        .setDescription('commands relative to the discord hunger games bot')
         .addSubcommand( new SlashCommandSubcommandBuilder()
             .setName('init')
             .setDescription('Initializes the discord hunger games game')
@@ -12,7 +13,11 @@ export class Dhg extends Command{
 
 
     handler: (interaction: ChatInputCommandInteraction<CacheType>) => void = (interaction:ChatInputCommandInteraction) => {
-        DHGManager.initActiveManager();
+        console.log('DHG received command');
+        if(interaction.options.getSubcommand() === 'init'){
+            //DHGManager.initActiveManager();
+            interaction.reply('DHG Initiated')
+        }
     };
     
 }
