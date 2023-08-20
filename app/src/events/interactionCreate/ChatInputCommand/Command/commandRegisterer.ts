@@ -11,16 +11,11 @@ export async function registerCommands() {
 
     // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
     for (const file of commandFiles) {
-        const module = file.substring(0,file.length-3)
-        console.log(`trying to import module : ./${module}`)
+        const module = file.substring(0,file.length-3);
 	    const command = await import("./" + module);
-        console.log(command[module]);
         const commo = command[module];
         const obj = new commo();
-        console.log(obj);
-        console.log(obj.builder);
         commands.push(obj.builder.toJSON() as RESTPostAPIChatInputApplicationCommandsJSONBody);
-        console.log(`pushed JSON for ${module}`);
     }
 
     // Construct and prepare an instance of the REST module

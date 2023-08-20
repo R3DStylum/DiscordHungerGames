@@ -1,5 +1,8 @@
+import { ChannelType, Client, Guild, GuildBasedChannel, GuildChannel } from "discord.js";
 import { DHGMap } from "./DHGMap";
 import { DHGPlayer } from "./DHGPlayer";
+import "dotenv/config";
+import { channel } from "node:diagnostics_channel";
 
 enum State {
     ERROR = -3,
@@ -13,26 +16,88 @@ enum State {
 }
 
 export class DHGManager {
+    static managers:Map<string,DHGManager> = new Map();
+
     turn: Number = 0;
     state: Number = State.INIT;
     players: DHGPlayer[] = [];
-    guild_id?: string;
-    client_id?: string;
+
+    guild:Guild;
+
+    adminCategoryChannel:GuildBasedChannel;
+    playerCategoryChannel:GuildBasedChannel;
+    cellsCategoryChannel:GuildBasedChannel;
+    otherCategoryChannel:GuildBasedChannel;
+
     map:DHGMap;
 
-    constructor(){
+    private constructor(guild:Guild, channels:{
+            adminCategoryChannel:GuildBasedChannel,
+            playerCategoryChannel:GuildBasedChannel,
+            cellsCategoryChannel:GuildBasedChannel,
+            otherCategoryChannel:GuildBasedChannel
+        })
+    {
         this.map = new DHGMap();
         this.state = State.PREPARED;
+
+        this.guild = guild;
+        this.adminCategoryChannel = channels.adminCategoryChannel;
+        this.playerCategoryChannel = channels.playerCategoryChannel;
+        this.cellsCategoryChannel = channels.cellsCategoryChannel;
+        this.otherCategoryChannel = channels.otherCategoryChannel;
+        
+        
+        DHGManager.managers.set(guild.id, this);
     }
 
-    static activeManager?: DHGManager = undefined;
-    static voidActiveManager():void {
-        this.activeManager = undefined;
+    static async createManager(guild:Guild):Promise<void>{
+        let adminChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg admin'});
+        if(adminChannel === undefined){
+            adminChannel = await guild.channels.create({
+                name:'dhg admin',
+                type:ChannelType.GuildCategory
+            });
+        }
+
+        let playerChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg players'});
+        if(playerChannel === undefined){
+            playerChannel = await guild.channels.create({
+                name:'dhg players',
+                type:ChannelType.GuildCategory
+            });
+        }
+
+        let cellsChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg cells'});
+        if(cellsChannel === undefined){
+            cellsChannel = await guild.channels.create({
+                name:'dhg cells',
+                type:ChannelType.GuildCategory
+            });
+        }
+
+        let otherChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg general'});
+        if(otherChannel === undefined){
+            otherChannel = await guild.channels.create({
+                name:'dhg general',
+                type:ChannelType.GuildCategory
+            });
+        }
+        
+        const channels = {
+            adminCategoryChannel:adminChannel, 
+            playerCategoryChannel:playerChannel, 
+            cellsCategoryChannel:cellsChannel, 
+            otherCategoryChannel:otherChannel
+        }
+
+        new DHGManager(guild, channels);
     }
-    static initActiveManager():void{
-        this.activeManager = new DHGManager();
+
+    static getManagerByClient(guild:Guild){
+        return this.managers.get(guild.id);
     }
-    static getActiveManager():DHGManager | undefined{
-        return this.activeManager;
+    static getManagerByClientId(guildId:string){
+        return this.managers.get(guildId);
     }
 }

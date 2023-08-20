@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashCommandSubcommandBuilder } from "discord.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashCommandSubcommandBuilder, Guild } from "discord.js";
 import { Command } from "./Command";
 import { DHGManager } from "../../../../classes/DHGManager";
 
@@ -15,8 +15,8 @@ export class dhg extends Command{
     handler: (interaction: ChatInputCommandInteraction<CacheType>) => void = (interaction:ChatInputCommandInteraction) => {
         console.log('DHG received command');
         if(interaction.options.getSubcommand() === 'init'){
-            //DHGManager.initActiveManager();
-            interaction.reply('DHG Initiated')
+            DHGManager.createManager(interaction.guild as Guild);
+            interaction.reply('DHG Initiated');
         }
     };
     
