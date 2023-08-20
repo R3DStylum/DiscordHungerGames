@@ -1,4 +1,4 @@
-import { ChannelType, Client, Guild, GuildBasedChannel, GuildChannel } from "discord.js";
+import { CategoryChannel, ChannelType, Client, Guild, GuildBasedChannel, GuildChannel } from "discord.js";
 import { DHGMap } from "./DHGMap";
 import { DHGPlayer } from "./DHGPlayer";
 import "dotenv/config";
@@ -58,7 +58,21 @@ export class DHGManager {
                 name:'dhg admin',
                 type:ChannelType.GuildCategory
             });
+            await guild.channels.create({
+                name:"control-room",
+                type:ChannelType.GuildText,
+                parent:adminChannel
+            });
+        }else{
+            if((adminChannel as CategoryChannel).children.cache.find((channel) => {return channel.name === 'control-room' && channel.type === ChannelType.GuildText}) === undefined){
+                await guild.channels.create({
+                    name:"control-room",
+                    type:ChannelType.GuildText,
+                    parent:(adminChannel as CategoryChannel)
+                });
+            }
         }
+
 
         let playerChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg players'});
         if(playerChannel === undefined){

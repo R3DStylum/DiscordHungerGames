@@ -1,7 +1,7 @@
 import { DHGCell } from "./DHGCell";
 
 export class DHGMap{
-    allCells:DHGCell[];
+    allCells:Map<Number,DHGCell>;
     center: DHGCell;
     firstRing: Map<string,DHGCell>;
     secondRing: Map<string,DHGCell>;
@@ -9,53 +9,53 @@ export class DHGMap{
 
     constructor(){
         //generate array
-        this.allCells = [];
+        this.allCells = new Map();
 
         //generate center cell
-        this.center = DHGCell.newEmptyCell();
+        this.center = DHGCell.newEmptyCell(0);
         
 
         //generate First Ring
         this.firstRing = new Map([
-            ['northCell',DHGCell.newEmptyCell()],
-            ['westCell',DHGCell.newEmptyCell()],
-            ['eastCell',DHGCell.newEmptyCell()],
-            ['southCell',DHGCell.newEmptyCell()],
+            ['northCell',DHGCell.newEmptyCell(1)],
+            ['westCell',DHGCell.newEmptyCell(4)],
+            ['eastCell',DHGCell.newEmptyCell(2)],
+            ['southCell',DHGCell.newEmptyCell(3)],
         ]);
         //generate all cells from second ring
         this.secondRing = new Map([
-            ['11',DHGCell.newEmptyCell()],
-            ['12',DHGCell.newEmptyCell()],
-            ['1',DHGCell.newEmptyCell()],
-            ['2',DHGCell.newEmptyCell()],
-            ['3',DHGCell.newEmptyCell()],
-            ['4',DHGCell.newEmptyCell()],
-            ['5',DHGCell.newEmptyCell()],
-            ['6',DHGCell.newEmptyCell()],
-            ['7',DHGCell.newEmptyCell()],
-            ['8',DHGCell.newEmptyCell()],
-            ['9',DHGCell.newEmptyCell()],
-            ['10',DHGCell.newEmptyCell()],
+            ['11',DHGCell.newEmptyCell(111)],
+            ['12',DHGCell.newEmptyCell(121)],
+            ['1',DHGCell.newEmptyCell(11)],
+            ['2',DHGCell.newEmptyCell(21)],
+            ['3',DHGCell.newEmptyCell(31)],
+            ['4',DHGCell.newEmptyCell(41)],
+            ['5',DHGCell.newEmptyCell(51)],
+            ['6',DHGCell.newEmptyCell(61)],
+            ['7',DHGCell.newEmptyCell(71)],
+            ['8',DHGCell.newEmptyCell(81)],
+            ['9',DHGCell.newEmptyCell(91)],
+            ['10',DHGCell.newEmptyCell(101)],
         ]);
-        //generate all cells from thirde ring
+        //generate all cells from third ring
         this.thirdRing = new Map([
-            ['11',DHGCell.newEmptyCell()],
-            ['12',DHGCell.newEmptyCell()],
-            ['1',DHGCell.newEmptyCell()],
-            ['2',DHGCell.newEmptyCell()],
-            ['3',DHGCell.newEmptyCell()],
-            ['4',DHGCell.newEmptyCell()],
-            ['5',DHGCell.newEmptyCell()],
-            ['6',DHGCell.newEmptyCell()],
-            ['7',DHGCell.newEmptyCell()],
-            ['8',DHGCell.newEmptyCell()],
-            ['9',DHGCell.newEmptyCell()],
-            ['10',DHGCell.newEmptyCell()],
+            ['11',DHGCell.newEmptyCell(112)],
+            ['12',DHGCell.newEmptyCell(122)],
+            ['1',DHGCell.newEmptyCell(12)],
+            ['2',DHGCell.newEmptyCell(22)],
+            ['3',DHGCell.newEmptyCell(32)],
+            ['4',DHGCell.newEmptyCell(42)],
+            ['5',DHGCell.newEmptyCell(52)],
+            ['6',DHGCell.newEmptyCell(62)],
+            ['7',DHGCell.newEmptyCell(72)],
+            ['8',DHGCell.newEmptyCell(82)],
+            ['9',DHGCell.newEmptyCell(92)],
+            ['10',DHGCell.newEmptyCell(102)],
         ]);
 
         //Start linking cells, and adding them to allCells.
             //linking center cell
-        this.allCells.push(this.center);
+        this.allCells.set(this.center.cellId, this.center);
             //set Ring
         this.center.ring = 0;
 
@@ -68,7 +68,7 @@ export class DHGMap{
             //linking first ring cells (most complex ring)
         for (const key in this.firstRing) {
             let cell:DHGCell = this.firstRing.get(key) as DHGCell
-            this.allCells.push(cell);
+            this.allCells.set(cell.cellId, cell);
             //set Ring
             cell.ring = 1;
 
@@ -118,7 +118,7 @@ export class DHGMap{
 
         for (const key in this.secondRing) {
             let cell:DHGCell = this.secondRing.get(key) as DHGCell
-            this.allCells.push(cell);
+            this.allCells.set(cell.cellId, cell);
 
             //set Ring and sector
             cell.ring = 2;
@@ -146,7 +146,7 @@ export class DHGMap{
         
         for (const key in this.thirdRing) {
             let cell:DHGCell = this.thirdRing.get(key) as DHGCell
-            this.allCells.push(cell);
+            this.allCells.set(cell.cellId, cell);
             //set Ring and sector
             cell.ring = 3;
             cell.sector = Number.parseInt(key);

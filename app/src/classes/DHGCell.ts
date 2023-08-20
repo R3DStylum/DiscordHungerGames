@@ -33,14 +33,18 @@ export class DHGCell {
 
     ring:Number | Ring;
     sector:Number | Sector;
+    cellId: Number;
     channel_id?: string;
     role_id?: string;
 
-    constructor(north:DHGCell  | null, 
+    constructor(cellId : Number,
+                north:DHGCell  | null, 
                 west:DHGCell | null, 
                 east:DHGCell | null, 
-                south?:DHGCell | {northwest:DHGCell, northnorth:DHGCell, northeast:DHGCell})
+                south?:DHGCell | {northwest:DHGCell, northnorth:DHGCell, northeast:DHGCell},)
     {
+        this.cellId = cellId;
+
         this.north = north;
         this.west = west;
         this.east = east;
@@ -50,8 +54,8 @@ export class DHGCell {
         this.sector = Sector.UNDETERMINED;
     }
 
-    static newEmptyCell():DHGCell{
-        return new DHGCell(null,null,null);
+    static newEmptyCell(cellId:Number):DHGCell{
+        return new DHGCell(cellId,null,null,null);
     }
 
     isFullyLinked(){
