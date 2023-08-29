@@ -1,114 +1,128 @@
+import { Guild } from "discord.js";
 import { DHGCell } from "./DHGCell";
 
 export class DHGMap{
-    allCells:Map<Number,DHGCell>;
+    allCells:Map<number,DHGCell>;
     center: DHGCell;
     firstRing: Map<string,DHGCell>;
     secondRing: Map<string,DHGCell>;
     thirdRing: Map<string,DHGCell>;
 
-    constructor(){
+    constructor(allCells:Map<number,DHGCell>,
+                center: DHGCell,
+                firstRing: Map<string,DHGCell>,
+                secondRing: Map<string,DHGCell>,
+                thirdRing: Map<string,DHGCell>)
+    {
+        this.allCells = allCells;
+        this.center = center;
+        this.firstRing = firstRing;
+        this.secondRing = secondRing;
+        this.thirdRing = thirdRing;
+    }
+
+    static async createMap(guild:Guild):Promise<DHGMap>{
         //generate array
-        this.allCells = new Map();
+        const allCells = new Map();
 
         //generate center cell
-        this.center = DHGCell.newEmptyCell(0);
+        const center = await DHGCell.newEmptyCell(0,guild);
         
 
         //generate First Ring
-        this.firstRing = new Map([
-            ['northCell',DHGCell.newEmptyCell(1)],
-            ['westCell',DHGCell.newEmptyCell(4)],
-            ['eastCell',DHGCell.newEmptyCell(2)],
-            ['southCell',DHGCell.newEmptyCell(3)],
+        const firstRing = new Map([
+            ['northCell',await DHGCell.newEmptyCell(1,guild)],
+            ['westCell',await DHGCell.newEmptyCell(4,guild)],
+            ['eastCell',await DHGCell.newEmptyCell(2,guild)],
+            ['southCell',await DHGCell.newEmptyCell(3,guild)],
         ]);
         //generate all cells from second ring
-        this.secondRing = new Map([
-            ['11',DHGCell.newEmptyCell(111)],
-            ['12',DHGCell.newEmptyCell(121)],
-            ['1',DHGCell.newEmptyCell(11)],
-            ['2',DHGCell.newEmptyCell(21)],
-            ['3',DHGCell.newEmptyCell(31)],
-            ['4',DHGCell.newEmptyCell(41)],
-            ['5',DHGCell.newEmptyCell(51)],
-            ['6',DHGCell.newEmptyCell(61)],
-            ['7',DHGCell.newEmptyCell(71)],
-            ['8',DHGCell.newEmptyCell(81)],
-            ['9',DHGCell.newEmptyCell(91)],
-            ['10',DHGCell.newEmptyCell(101)],
+        const secondRing = new Map([
+            ['11',await DHGCell.newEmptyCell(111,guild)],
+            ['12',await DHGCell.newEmptyCell(121,guild)],
+            ['1',await DHGCell.newEmptyCell(11,guild)],
+            ['2',await DHGCell.newEmptyCell(21,guild)],
+            ['3',await DHGCell.newEmptyCell(31,guild)],
+            ['4',await DHGCell.newEmptyCell(41,guild)],
+            ['5',await DHGCell.newEmptyCell(51,guild)],
+            ['6',await DHGCell.newEmptyCell(61,guild)],
+            ['7',await DHGCell.newEmptyCell(71,guild)],
+            ['8',await DHGCell.newEmptyCell(81,guild)],
+            ['9',await DHGCell.newEmptyCell(91,guild)],
+            ['10',await DHGCell.newEmptyCell(101,guild)],
         ]);
         //generate all cells from third ring
-        this.thirdRing = new Map([
-            ['11',DHGCell.newEmptyCell(112)],
-            ['12',DHGCell.newEmptyCell(122)],
-            ['1',DHGCell.newEmptyCell(12)],
-            ['2',DHGCell.newEmptyCell(22)],
-            ['3',DHGCell.newEmptyCell(32)],
-            ['4',DHGCell.newEmptyCell(42)],
-            ['5',DHGCell.newEmptyCell(52)],
-            ['6',DHGCell.newEmptyCell(62)],
-            ['7',DHGCell.newEmptyCell(72)],
-            ['8',DHGCell.newEmptyCell(82)],
-            ['9',DHGCell.newEmptyCell(92)],
-            ['10',DHGCell.newEmptyCell(102)],
+        const thirdRing = new Map([
+            ['11',await DHGCell.newEmptyCell(112,guild)],
+            ['12',await DHGCell.newEmptyCell(122,guild)],
+            ['1',await DHGCell.newEmptyCell(12,guild)],
+            ['2',await DHGCell.newEmptyCell(22,guild)],
+            ['3',await DHGCell.newEmptyCell(32,guild)],
+            ['4',await DHGCell.newEmptyCell(42,guild)],
+            ['5',await DHGCell.newEmptyCell(52,guild)],
+            ['6',await DHGCell.newEmptyCell(62,guild)],
+            ['7',await DHGCell.newEmptyCell(72,guild)],
+            ['8',await DHGCell.newEmptyCell(82,guild)],
+            ['9',await DHGCell.newEmptyCell(92,guild)],
+            ['10',await DHGCell.newEmptyCell(102,guild)],
         ]);
 
         //Start linking cells, and adding them to allCells.
             //linking center cell
-        this.allCells.set(this.center.cellId, this.center);
+        allCells.set(center.cellId, center);
             //set Ring
-        this.center.ring = 0;
+        center.ring = 0;
 
             //setting all links
-        this.center.north = this.firstRing.get('northCell') as DHGCell;
-        this.center.east = this.firstRing.get('eastCell') as DHGCell;
-        this.center.west = this.firstRing.get('westCell') as DHGCell;
-        this.center.south = this.firstRing.get('southCell') as DHGCell;
+        center.north = firstRing.get('northCell') as DHGCell;
+        center.east = firstRing.get('eastCell') as DHGCell;
+        center.west = firstRing.get('westCell') as DHGCell;
+        center.south = firstRing.get('southCell') as DHGCell;
 
             //linking first ring cells (most complex ring)
-        for (const key in this.firstRing) {
-            let cell:DHGCell = this.firstRing.get(key) as DHGCell
-            this.allCells.set(cell.cellId, cell);
+        for (const key in firstRing) {
+            let cell:DHGCell = firstRing.get(key) as DHGCell
+            allCells.set(cell.cellId, cell);
             //set Ring
             cell.ring = 1;
 
             //setting all links
-            cell.north = this.center;
+            cell.north = center;
             switch (key) {
                 case 'northCell':
-                    cell.east = this.firstRing.get('westCell') as DHGCell;
-                    cell.west = this.firstRing.get('eastCell') as DHGCell;
+                    cell.east = firstRing.get('westCell') as DHGCell;
+                    cell.west = firstRing.get('eastCell') as DHGCell;
                     cell.south = {
-                        northeast: this.secondRing.get('11') as DHGCell,
-                        northnorth: this.secondRing.get('12') as DHGCell,
-                        northwest: this.secondRing.get('1') as DHGCell
+                        northeast: secondRing.get('11') as DHGCell,
+                        northnorth: secondRing.get('12') as DHGCell,
+                        northwest: secondRing.get('1') as DHGCell
                     }
                     break;
                 case 'eastCell':
-                    cell.east = this.firstRing.get('northCell') as DHGCell;
-                    cell.west = this.firstRing.get('southCell') as DHGCell;
+                    cell.east = firstRing.get('northCell') as DHGCell;
+                    cell.west = firstRing.get('southCell') as DHGCell;
                     cell.south = {
-                        northeast: this.secondRing.get('2') as DHGCell,
-                        northnorth: this.secondRing.get('3') as DHGCell,
-                        northwest: this.secondRing.get('4') as DHGCell
+                        northeast: secondRing.get('2') as DHGCell,
+                        northnorth: secondRing.get('3') as DHGCell,
+                        northwest: secondRing.get('4') as DHGCell
                     }
                     break;
                 case 'westCell':
-                    cell.east = this.firstRing.get('southCell') as DHGCell;
-                    cell.west = this.firstRing.get('northCell') as DHGCell;
+                    cell.east = firstRing.get('southCell') as DHGCell;
+                    cell.west = firstRing.get('northCell') as DHGCell;
                     cell.south = {
-                        northeast: this.secondRing.get('8') as DHGCell,
-                        northnorth: this.secondRing.get('9') as DHGCell,
-                        northwest: this.secondRing.get('10') as DHGCell
+                        northeast: secondRing.get('8') as DHGCell,
+                        northnorth: secondRing.get('9') as DHGCell,
+                        northwest: secondRing.get('10') as DHGCell
                     }
                     break;
                 case 'southCell':
-                    cell.east = this.firstRing.get('eastCell') as DHGCell;
-                    cell.west = this.firstRing.get('westCell') as DHGCell;
+                    cell.east = firstRing.get('eastCell') as DHGCell;
+                    cell.west = firstRing.get('westCell') as DHGCell;
                     cell.south = {
-                        northeast: this.secondRing.get('5') as DHGCell,
-                        northnorth: this.secondRing.get('6') as DHGCell,
-                        northwest: this.secondRing.get('7') as DHGCell
+                        northeast: secondRing.get('5') as DHGCell,
+                        northnorth: secondRing.get('6') as DHGCell,
+                        northwest: secondRing.get('7') as DHGCell
                     }
                     break;
                 default:
@@ -116,9 +130,9 @@ export class DHGMap{
             }
         }
 
-        for (const key in this.secondRing) {
-            let cell:DHGCell = this.secondRing.get(key) as DHGCell
-            this.allCells.set(cell.cellId, cell);
+        for (const key in secondRing) {
+            let cell:DHGCell = secondRing.get(key) as DHGCell
+            allCells.set(cell.cellId, cell);
 
             //set Ring and sector
             cell.ring = 2;
@@ -126,40 +140,42 @@ export class DHGMap{
 
             //setting the north of all second ring cells
             if ((Number.parseInt(key)+1) % 12 < 3) {
-                cell.north = this.firstRing.get('north') as DHGCell;
+                cell.north = firstRing.get('north') as DHGCell;
             } else if ((Number.parseInt(key)+1) % 12 < 6) {
-                cell.north = this.firstRing.get('east') as DHGCell;
+                cell.north = firstRing.get('east') as DHGCell;
             } else if ((Number.parseInt(key)+1) % 12 < 9) {
-                cell.north = this.firstRing.get('south') as DHGCell;
+                cell.north = firstRing.get('south') as DHGCell;
             } else {
-                cell.north = this.firstRing.get('west') as DHGCell;
+                cell.north = firstRing.get('west') as DHGCell;
             }
 
             //setting east and west
-            cell.east = this.secondRing.get(String((Number.parseInt(key)-1) % 12)) as DHGCell;
-            cell.west = this.secondRing.get(String((Number.parseInt(key)+1) % 12)) as DHGCell;
+            cell.east = secondRing.get(String((Number.parseInt(key)-1) % 12)) as DHGCell;
+            cell.west = secondRing.get(String((Number.parseInt(key)+1) % 12)) as DHGCell;
 
             //setting south
-            cell.south = this.thirdRing.get(String(Number.parseInt(key))) as DHGCell;
+            cell.south = thirdRing.get(String(Number.parseInt(key))) as DHGCell;
         }
 
         
-        for (const key in this.thirdRing) {
-            let cell:DHGCell = this.thirdRing.get(key) as DHGCell
-            this.allCells.set(cell.cellId, cell);
+        for (const key in thirdRing) {
+            let cell:DHGCell = thirdRing.get(key) as DHGCell
+            allCells.set(cell.cellId, cell);
             //set Ring and sector
             cell.ring = 3;
             cell.sector = Number.parseInt(key);
 
             //setting the north of all third ring cells
-            cell.north = this.secondRing.get(String(Number.parseInt(key))) as DHGCell;
+            cell.north = secondRing.get(String(Number.parseInt(key))) as DHGCell;
 
             //setting east and west
-            cell.east = this.thirdRing.get(String((Number.parseInt(key)-1) % 12)) as DHGCell;
-            cell.west = this.thirdRing.get(String((Number.parseInt(key)+1) % 12)) as DHGCell;
+            cell.east = thirdRing.get(String((Number.parseInt(key)-1) % 12)) as DHGCell;
+            cell.west = thirdRing.get(String((Number.parseInt(key)+1) % 12)) as DHGCell;
 
             //no south, edge of the map
         }
+
+        return new DHGMap(allCells,center,firstRing,secondRing,thirdRing);
     }
 
     

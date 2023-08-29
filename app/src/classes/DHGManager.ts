@@ -1,8 +1,7 @@
-import { CategoryChannel, ChannelType, Client, Guild, GuildBasedChannel, GuildChannel } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CategoryChannel, ChannelType, Client, Guild, GuildBasedChannel, GuildChannel, TextChannel } from "discord.js";
 import { DHGMap } from "./DHGMap";
 import { DHGPlayer } from "./DHGPlayer";
 import "dotenv/config";
-import { channel } from "node:diagnostics_channel";
 
 enum State {
     ERROR = -3,
@@ -24,21 +23,21 @@ export class DHGManager {
 
     guild:Guild;
 
-    adminCategoryChannel:GuildBasedChannel;
-    playerCategoryChannel:GuildBasedChannel;
-    cellsCategoryChannel:GuildBasedChannel;
-    otherCategoryChannel:GuildBasedChannel;
+    adminCategoryChannel:CategoryChannel;
+    playerCategoryChannel:CategoryChannel;
+    cellsCategoryChannel:CategoryChannel;
+    otherCategoryChannel:CategoryChannel;
 
     map:DHGMap;
 
     private constructor(guild:Guild, channels:{
-            adminCategoryChannel:GuildBasedChannel,
-            playerCategoryChannel:GuildBasedChannel,
-            cellsCategoryChannel:GuildBasedChannel,
-            otherCategoryChannel:GuildBasedChannel
-        })
+            adminCategoryChannel:CategoryChannel,
+            playerCategoryChannel:CategoryChannel,
+            cellsCategoryChannel:CategoryChannel,
+            otherCategoryChannel:CategoryChannel
+        },map:DHGMap)
     {
-        this.map = new DHGMap();
+        this.map = map;
         this.state = State.PREPARED;
 
         this.guild = guild;
@@ -52,20 +51,20 @@ export class DHGManager {
     }
 
     static async createManager(guild:Guild):Promise<void>{
-        let adminChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg admin'});
+        let adminChannel:CategoryChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg admin'}) as CategoryChannel;
         if(adminChannel === undefined){
             adminChannel = await guild.channels.create({
                 name:'dhg admin',
                 type:ChannelType.GuildCategory
             });
-            await guild.channels.create({
+            guild.channels.create({
                 name:"control-room",
                 type:ChannelType.GuildText,
                 parent:adminChannel
             });
         }else{
             if((adminChannel as CategoryChannel).children.cache.find((channel) => {return channel.name === 'control-room' && channel.type === ChannelType.GuildText}) === undefined){
-                await guild.channels.create({
+                guild.channels.create({
                     name:"control-room",
                     type:ChannelType.GuildText,
                     parent:(adminChannel as CategoryChannel)
@@ -74,7 +73,7 @@ export class DHGManager {
         }
 
 
-        let playerChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg players'});
+        let playerChannel:CategoryChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg players'}) as CategoryChannel;
         if(playerChannel === undefined){
             playerChannel = await guild.channels.create({
                 name:'dhg players',
@@ -82,7 +81,7 @@ export class DHGManager {
             });
         }
 
-        let cellsChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg cells'});
+        let cellsChannel:CategoryChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg cells'}) as CategoryChannel;
         if(cellsChannel === undefined){
             cellsChannel = await guild.channels.create({
                 name:'dhg cells',
@@ -90,12 +89,25 @@ export class DHGManager {
             });
         }
 
-        let otherChannel:GuildBasedChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg general'});
+        let otherChannel:CategoryChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg general'}) as CategoryChannel;
         if(otherChannel === undefined){
             otherChannel = await guild.channels.create({
                 name:'dhg general',
                 type:ChannelType.GuildCategory
             });
+            guild.channels.create({
+                name:"broadcast",
+                type:ChannelType.GuildText,
+                parent:otherChannel
+            });
+        }else{
+            if((otherChannel as CategoryChannel).children.cache.find((channel) => {return channel.name === 'broadcast' && channel.type === ChannelType.GuildText}) === undefined){
+                guild.channels.create({
+                    name:"broadcast",
+                    type:ChannelType.GuildText,
+                    parent:(otherChannel as CategoryChannel)
+                });
+            }
         }
         
         const channels = {
@@ -105,13 +117,45 @@ export class DHGManager {
             otherCategoryChannel:otherChannel
         }
 
-        new DHGManager(guild, channels);
+        new DHGManager(guild, channels,await DHGMap.createMap(guild));
     }
 
-    static getManagerByClient(guild:Guild){
+    async sendInvitation(nbParticipants:bigint):Promise<void>{
+        console.log('Invitations to be sent...')
+        const teamSize = nbParticipants/(BigInt(12));
+        const broadcastChannel = this.guild.channels.cache.find((channel) => {return channel.name === 'broadcast' && channel.type === ChannelType.GuildText}) as TextChannel;
+        if(broadcastChannel !== undefined){
+            const rows:ActionRowBuilder<ButtonBuilder>[] = [];
+            let row = new ActionRowBuilder<ButtonBuilder>();
+            for(let i:bigint = BigInt(0); i < nbParticipants; i++){
+                const team = i/teamSize;
+                const number = (i%teamSize)+BigInt(1);
+                row.components.push(
+                    new ButtonBuilder()
+                        .setCustomId(`participant:${team}-${number}`)
+                        .setLabel(`District : ${team}`)
+                        .setStyle(ButtonStyle.Danger)
+                )
+                if(i%BigInt(4) == BigInt(3)){
+                    rows.push(row);
+                    row = new ActionRowBuilder<ButtonBuilder>();
+                }
+            }
+            await broadcastChannel.send({
+                content: 'Register for the Discord Hunger Games ! Blood and Glory awaits !',
+            })
+            for(row of rows){
+                await broadcastChannel.send({
+                    components: [row],
+                })
+            }
+        }
+    }
+
+    static getManagerByGuild(guild:Guild){
         return this.managers.get(guild.id);
     }
-    static getManagerByClientId(guildId:string){
+    static getManagerByGuildId(guildId:string){
         return this.managers.get(guildId);
     }
 }

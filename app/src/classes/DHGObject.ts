@@ -11,20 +11,20 @@ enum DHGObjectType {
 
 export class DHGObject {
 
-    id: Number;
+    id: number;
     type: DHGObjectType = 0;
 
     //Weapon stats
-    attacks?: Number;
-    damage?: Number;
-    accuracy?: Number;
+    attacks?: number;
+    damage?: number;
+    accuracy?: number;
 
     //FOOD or DRINK stats
     poisonous?: Boolean;
 
     effect:Function = (holder:DHGPlayer, target?: DHGPlayer, manager?:DHGManager,) => {};
 
-    constructor(id:Number){
+    constructor(id:number){
         this.id = id;
     }
 
