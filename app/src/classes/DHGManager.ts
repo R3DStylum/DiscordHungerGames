@@ -125,28 +125,28 @@ export class DHGManager {
         const teamSize = nbParticipants/(BigInt(12));
         const broadcastChannel = this.guild.channels.cache.find((channel) => {return channel.name === 'broadcast' && channel.type === ChannelType.GuildText}) as TextChannel;
         if(broadcastChannel !== undefined){
-            const rows:ActionRowBuilder<ButtonBuilder>[] = [];
-            let row = new ActionRowBuilder<ButtonBuilder>();
+            const rows:Map<string,ActionRowBuilder<ButtonBuilder>> = new Map();
+            let row:ActionRowBuilder<ButtonBuilder>;
             for(let i:bigint = BigInt(0); i < nbParticipants; i++){
-                const team = i/teamSize;
+                row = new ActionRowBuilder<ButtonBuilder>();
+                const team = (i/teamSize)+BigInt(1);
                 const number = (i%teamSize)+BigInt(1);
                 row.components.push(
                     new ButtonBuilder()
                         .setCustomId(`participant:${team}-${number}`)
-                        .setLabel(`District : ${team}`)
+                        .setLabel(`Register`)
                         .setStyle(ButtonStyle.Danger)
                 )
-                if(i%BigInt(4) == BigInt(3)){
-                    rows.push(row);
-                    row = new ActionRowBuilder<ButtonBuilder>();
-                }
+                rows.set(`participant ${number} of District ${team}`,row)
             }
+            //ensures the right order
             await broadcastChannel.send({
                 content: 'Register for the Discord Hunger Games ! Blood and Glory awaits !',
             })
-            for(row of rows){
+            for(let row of rows){
                 await broadcastChannel.send({
-                    components: [row],
+                    content: row[0],
+                    components: [row[1]],
                 })
             }
         }

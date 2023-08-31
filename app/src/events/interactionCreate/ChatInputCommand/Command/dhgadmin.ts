@@ -7,7 +7,7 @@ export class dhg extends Command{
     //everything in lowercase ya bastard
     //and descriptions everywhere you can
     builder = new SlashCommandBuilder()
-        .setName('dhg')
+        .setName('dhgadmin')
         .setDescription('commands relative to the discord hunger games bot')
         .addSubcommand( new SlashCommandSubcommandBuilder()
             .setName('init')
@@ -26,7 +26,7 @@ export class dhg extends Command{
                 .setDescription('cleans up everything related with the admin of dhg (dhg categories and dhg general)')
             )
         ).addSubcommand(new SlashCommandSubcommandBuilder()
-            .setName('sendinvite')
+            .setName('sendinvites')
             .setDescription('sends the invitation for the players to subscribe')
             .addNumberOption(new SlashCommandNumberOption()
                 .setRequired(true)
@@ -41,7 +41,7 @@ export class dhg extends Command{
 
 
     handler: (interaction: ChatInputCommandInteraction<CacheType>) => void = (interaction:ChatInputCommandInteraction) => {
-        console.log('DHG received command \n' + interaction);
+        console.log('DHG received command');
         if(interaction.options.getSubcommand() === 'init'){
             DHGManager.createManager(interaction.guild as Guild);
             interaction.reply('DHG Initiated');
@@ -55,11 +55,14 @@ export class dhg extends Command{
                 });
             }
             if(interaction.options.getSubcommand() === 'all'){
-                interaction.deferReply({ephemeral: true});
-                DHGCell.cleanupCells(interaction.guild as Guild);
+                interaction.deferReply({ephemeral: true}).then(() => {
+                    return DHGCell.cleanupCells(interaction.guild as Guild)
+                }).then(() => {
+                    interaction.editReply({content:"Everything cell related cleaned"})
+                });
             }
         }
-        if(interaction.options.getSubcommand() === 'sendinvite'){
+        if(interaction.options.getSubcommand() === 'sendinvites'){
             console.log('trying to send invite');
             let manager = DHGManager.getManagerByGuild(interaction.guild as Guild);
             console.log('manager is ' + manager);

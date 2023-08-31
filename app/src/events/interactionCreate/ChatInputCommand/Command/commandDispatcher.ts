@@ -7,8 +7,8 @@ export async function handle(interaction:ChatInputCommandInteraction){
     if(fs.readdirSync(__dirname).find((file) => {return file.startsWith(`${interaction.commandName}`)}) != undefined){
         const module = interaction.commandName;
         const command = await import(`./${module}`);
-        const commo = command[module];
-        const obj = new commo();
+        const commandObject = command[module];
+        const obj = new commandObject();
         obj.handler(interaction);
     }
 }

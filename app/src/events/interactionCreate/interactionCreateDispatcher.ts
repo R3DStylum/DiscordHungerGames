@@ -1,4 +1,4 @@
-import { BaseInteraction, ChatInputCommandInteraction } from "discord.js";
+import { BaseInteraction, ButtonInteraction, ChatInputCommandInteraction } from "discord.js";
 
 
 export async function dispatch(interaction:BaseInteraction){
@@ -6,5 +6,9 @@ export async function dispatch(interaction:BaseInteraction){
     if (interaction.isChatInputCommand()) {
         const dispatcher = await import(`./ChatInputCommand/chatInputCommandDispatcher`);
         dispatcher.dispatch(interaction as ChatInputCommandInteraction);
+    }
+    if (interaction.isButton()) {
+        const dispatcher = await import(`./Button/buttonDispatcher`);
+        dispatcher.dispatch(interaction as ButtonInteraction);
     }
 }
