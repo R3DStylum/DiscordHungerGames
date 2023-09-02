@@ -42,12 +42,14 @@ enum Sector {
 
 export class DHGCell {
 
+    static nowhere = new DHGCell(-1, (undefined as unknown as TextChannel), (undefined as unknown as Role), null, null, null)
+
     //north is towards the center of the Map. south is towards the border, and is null if you are at the border cells.
     //west and east are towards the left (or clockwise) and the right(or counter-clockwise) respectively.
     north: DHGCell  | null;
     west: DHGCell | null;
     east: DHGCell | null;
-    south?: DHGCell | {northwest:DHGCell, northnorth:DHGCell, northeast:DHGCell};
+    south?: DHGCell | {southwest:DHGCell, southsouth:DHGCell, southeast:DHGCell};
 
     ring:number | Ring;
     sector:number | Sector;
@@ -61,7 +63,7 @@ export class DHGCell {
                 north:DHGCell  | null, 
                 west:DHGCell | null, 
                 east:DHGCell | null, 
-                south?:DHGCell | {northwest:DHGCell, northnorth:DHGCell, northeast:DHGCell})
+                south?:DHGCell | {southwest:DHGCell, southsouth:DHGCell, southeast:DHGCell})
     {
         this.cellId = cellId;
 
@@ -105,11 +107,15 @@ export class DHGCell {
         cellChannels.forEach((value) => {guild.channels.delete(value as GuildBasedChannel, "cleaning up cell channels")});*/
         const cellRoles = guild.roles.cache.filter((cellRole) => {return cellRole.name.startsWith("cell-")});
         cellRoles.forEach((value) => {promises.push(guild.roles.delete(value as Role, "cleaning up cell Roles"))});
-        return Promise.all(promises)
+        return Promise.all(promises);
     }
 
-    isFullyLinked(){
+    isFullyLinked():boolean{
         return ((this.north != null) && (this.west != null) && (this.east != null));
+    }
+
+    neighbors():{north: DHGCell | null, west: DHGCell | null, east: DHGCell | null, south?: DHGCell | {southwest:DHGCell, southsouth:DHGCell, southeast:DHGCell} | null}{
+        return {north: this.north, east: this.east, west:this.west, south: this.south}
     }
 
 }

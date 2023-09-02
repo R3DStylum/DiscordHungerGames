@@ -3,12 +3,12 @@ import { Command } from "./Command";
 import { DHGManager } from "../../../../classes/DHGManager";
 import { DHGCell } from "../../../../classes/DHGCell";
 
-export class dhg extends Command{
-    //everything in lowercase ya bastard
+export class dhgadmin extends Command{
+    //everything in lowercase ya bastard (except in descriptions tho)
     //and descriptions everywhere you can
     builder = new SlashCommandBuilder()
         .setName('dhgadmin')
-        .setDescription('commands relative to the discord hunger games bot')
+        .setDescription('commands relative to the administrative side of the discord hunger games bot')
         .addSubcommand( new SlashCommandSubcommandBuilder()
             .setName('init')
             .setDescription('Initializes the discord hunger games game')
@@ -37,6 +37,13 @@ export class dhg extends Command{
                     { name: "24", value: 24 }
                 )
             )
+        ).addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
+            .setName('see')
+            .setDescription('displays information on various parts of the currant game')
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('players')
+                .setDescription('displays info about all the players in the game')
+            )
         );
 
 
@@ -64,11 +71,21 @@ export class dhg extends Command{
         }
         if(interaction.options.getSubcommand() === 'sendinvites'){
             console.log('trying to send invite');
-            let manager = DHGManager.getManagerByGuild(interaction.guild as Guild);
-            console.log('manager is ' + manager);
-            manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
-            console.log('manager is ' + manager);
+            const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
             manager?.sendInvitation(BigInt(interaction.options.getNumber('participants',true)));
+        }
+        if(interaction.options.getSubcommandGroup() === 'see'){
+            if(interaction.options.getSubcommand() === 'players'){
+                const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
+                if(manager === undefined){interaction.reply({ephemeral: true, content:'could not find manager for your server'}); return}
+                interaction.deferReply({ephemeral:false}).then(() => {
+                    let content = "";
+                    for (const player of manager.players) {
+                       content += player.fullDescription();
+                    }
+                    interaction.editReply({content: content})
+                })
+            }
         }
     };
     

@@ -93,36 +93,36 @@ export class DHGMap{
                     cell.east = firstRing.get('westCell') as DHGCell;
                     cell.west = firstRing.get('eastCell') as DHGCell;
                     cell.south = {
-                        northeast: secondRing.get('11') as DHGCell,
-                        northnorth: secondRing.get('12') as DHGCell,
-                        northwest: secondRing.get('1') as DHGCell
+                        southeast: secondRing.get('11') as DHGCell,
+                        southsouth: secondRing.get('12') as DHGCell,
+                        southwest: secondRing.get('1') as DHGCell
                     }
                     break;
                 case 'eastCell':
                     cell.east = firstRing.get('northCell') as DHGCell;
                     cell.west = firstRing.get('southCell') as DHGCell;
                     cell.south = {
-                        northeast: secondRing.get('2') as DHGCell,
-                        northnorth: secondRing.get('3') as DHGCell,
-                        northwest: secondRing.get('4') as DHGCell
+                        southeast: secondRing.get('2') as DHGCell,
+                        southsouth: secondRing.get('3') as DHGCell,
+                        southwest: secondRing.get('4') as DHGCell
                     }
                     break;
                 case 'westCell':
                     cell.east = firstRing.get('southCell') as DHGCell;
                     cell.west = firstRing.get('northCell') as DHGCell;
                     cell.south = {
-                        northeast: secondRing.get('8') as DHGCell,
-                        northnorth: secondRing.get('9') as DHGCell,
-                        northwest: secondRing.get('10') as DHGCell
+                        southeast: secondRing.get('8') as DHGCell,
+                        southsouth: secondRing.get('9') as DHGCell,
+                        southwest: secondRing.get('10') as DHGCell
                     }
                     break;
                 case 'southCell':
                     cell.east = firstRing.get('eastCell') as DHGCell;
                     cell.west = firstRing.get('westCell') as DHGCell;
                     cell.south = {
-                        northeast: secondRing.get('5') as DHGCell,
-                        northnorth: secondRing.get('6') as DHGCell,
-                        northwest: secondRing.get('7') as DHGCell
+                        southeast: secondRing.get('5') as DHGCell,
+                        southsouth: secondRing.get('6') as DHGCell,
+                        southwest: secondRing.get('7') as DHGCell
                     }
                     break;
                 default:
@@ -178,5 +178,7 @@ export class DHGMap{
         return new DHGMap(allCells,center,firstRing,secondRing,thirdRing);
     }
 
-    
+    getCellbyId(cell:DHGCell):DHGCell | undefined{
+        return this.allCells.get(cell.cellId);
+    }
 }

@@ -1,7 +1,8 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CategoryChannel, ChannelType, Client, Guild, GuildBasedChannel, GuildChannel, TextChannel } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CategoryChannel, ChannelType, Client, Guild, GuildBasedChannel, GuildChannel, GuildMember, MessageFlags, TextChannel } from "discord.js";
 import { DHGMap } from "./DHGMap";
 import { DHGPlayer } from "./DHGPlayer";
 import "dotenv/config";
+import { DHGError } from "./Errors/DHGError";
 
 enum State {
     ERROR = -3,
@@ -19,7 +20,7 @@ export class DHGManager {
 
     turn: Number = 0;
     state: Number = State.INIT;
-    players: DHGPlayer[] = [];
+    players: DHGPlayer[];
 
     guild:Guild;
 
@@ -37,6 +38,7 @@ export class DHGManager {
             otherCategoryChannel:CategoryChannel
         },map:DHGMap)
     {
+        this.players = [];
         this.map = map;
         this.state = State.PREPARED;
 
@@ -142,13 +144,27 @@ export class DHGManager {
             //ensures the right order
             await broadcastChannel.send({
                 content: 'Register for the Discord Hunger Games ! Blood and Glory awaits !',
+                
             })
             for(let row of rows){
                 await broadcastChannel.send({
                     content: row[0],
                     components: [row[1]],
+                    flags: [MessageFlags.SuppressNotifications],
                 })
             }
+        }
+    }
+
+    async registerPlayer(member:GuildMember, district?:number, participantNumber?: number): Promise<boolean>{
+        if (this.players.find((player) => {return player.id == member.id;}) === undefined) {
+            const player_1 = await DHGPlayer.createPlayer(member, this.guild as Guild);
+            player_1.district = district;
+            player_1.participantNumber = participantNumber;
+            this.players.push(player_1);
+            return true;
+        }else{
+            return new Promise<boolean>(() => {return false});
         }
     }
 
@@ -158,4 +174,5 @@ export class DHGManager {
     static getManagerByGuildId(guildId:string){
         return this.managers.get(guildId);
     }
+
 }
