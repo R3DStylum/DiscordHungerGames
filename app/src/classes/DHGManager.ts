@@ -20,7 +20,7 @@ export class DHGManager {
 
     turn: Number = 0;
     state: Number = State.INIT;
-    players: DHGPlayer[];
+    players: Map<string,DHGPlayer>;
 
     guild:Guild;
 
@@ -38,7 +38,7 @@ export class DHGManager {
             otherCategoryChannel:CategoryChannel
         },map:DHGMap)
     {
-        this.players = [];
+        this.players = new Map<string,DHGPlayer>();
         this.map = map;
         this.state = State.PREPARED;
 
@@ -122,11 +122,18 @@ export class DHGManager {
         new DHGManager(guild, channels,await DHGMap.createMap(guild));
     }
 
-    async sendInvitation(nbParticipants:bigint):Promise<void>{
-        console.log('Invitations to be sent...')
+    async sendInvitations(nbParticipants:bigint):Promise<void>{
+        const everyoneRole = this.guild.roles.everyone;
         const teamSize = nbParticipants/(BigInt(12));
-        const broadcastChannel = this.guild.channels.cache.find((channel) => {return channel.name === 'broadcast' && channel.type === ChannelType.GuildText}) as TextChannel;
-        if(broadcastChannel !== undefined){
+        let invitesChannel = this.guild.channels.cache.find((channel) => {return channel.name === 'invitations' && channel.type === ChannelType.GuildText}) as TextChannel;
+        if(invitesChannel == undefined){invitesChannel = await this.guild.channels.create({
+            name: 'invitations',
+            type: ChannelType.GuildText,
+            parent: this.otherCategoryChannel
+        })}
+        await invitesChannel.permissionOverwrites.create(process.env.CLIENT_ID as string,{ViewChannel:true});
+        await invitesChannel.permissionOverwrites.create(everyoneRole,{ViewChannel:false})
+        if(invitesChannel !== undefined){
             const rows:Map<string,ActionRowBuilder<ButtonBuilder>> = new Map();
             let row:ActionRowBuilder<ButtonBuilder>;
             for(let i:bigint = BigInt(0); i < nbParticipants; i++){
@@ -142,30 +149,38 @@ export class DHGManager {
                 rows.set(`participant ${number} of District ${team}`,row)
             }
             //ensures the right order
-            await broadcastChannel.send({
-                content: 'Register for the Discord Hunger Games ! Blood and Glory awaits !',
-                
-            })
+            
             for(let row of rows){
-                await broadcastChannel.send({
+                await invitesChannel.send({
                     content: row[0],
                     components: [row[1]],
                     flags: [MessageFlags.SuppressNotifications],
                 })
             }
+            await invitesChannel.send({
+                content: `<@${this.guild.roles.everyone}>` + 'Register for the Discord Hunger Games ! Blood and Glory awaits !',
+            })
+            await invitesChannel.permissionOverwrites.create(everyoneRole,{ViewChannel:false})
         }
     }
 
     async registerPlayer(member:GuildMember, district?:number, participantNumber?: number): Promise<boolean>{
-        if (this.players.find((player) => {return player.id == member.id;}) === undefined) {
-            const player_1 = await DHGPlayer.createPlayer(member, this.guild as Guild);
-            player_1.district = district;
-            player_1.participantNumber = participantNumber;
-            this.players.push(player_1);
+        if (this.players.get(member.id) === undefined) {
+            const player = await DHGPlayer.createPlayer(member, this.guild as Guild);
+            player.district = district;
+            player.participantNumber = participantNumber;
+            this.players.set(member.id, player);
             return true;
         }else{
             return new Promise<boolean>(() => {return false});
         }
+    }
+
+    getPlayer(member:GuildMember):DHGPlayer | undefined{
+        return this.players.get(member.id);
+    }
+    getPlayerById(id:string):DHGPlayer | undefined{
+        return this.players.get(id);
     }
 
     static getManagerByGuild(guild:Guild){
@@ -174,5 +189,6 @@ export class DHGManager {
     static getManagerByGuildId(guildId:string){
         return this.managers.get(guildId);
     }
+
 
 }

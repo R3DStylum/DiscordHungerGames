@@ -23,7 +23,7 @@ export class DHGMap{
 
     static async createMap(guild:Guild):Promise<DHGMap>{
         //generate array
-        const allCells = new Map();
+        const allCells = new Map<number,DHGCell>();
 
         //generate center cell
         const center = await DHGCell.newEmptyCell(0,guild);
@@ -80,7 +80,7 @@ export class DHGMap{
         center.south = firstRing.get('southCell') as DHGCell;
 
             //linking first ring cells (most complex ring)
-        for (const key in firstRing) {
+        for (const key of firstRing.keys()) {
             let cell:DHGCell = firstRing.get(key) as DHGCell
             allCells.set(cell.cellId, cell);
             //set Ring
@@ -130,7 +130,7 @@ export class DHGMap{
             }
         }
 
-        for (const key in secondRing) {
+        for (const key of secondRing.keys()) {
             let cell:DHGCell = secondRing.get(key) as DHGCell
             allCells.set(cell.cellId, cell);
 
@@ -140,25 +140,25 @@ export class DHGMap{
 
             //setting the north of all second ring cells
             if ((Number.parseInt(key)+1) % 12 < 3) {
-                cell.north = firstRing.get('north') as DHGCell;
+                cell.north = firstRing.get('northCell') as DHGCell;
             } else if ((Number.parseInt(key)+1) % 12 < 6) {
-                cell.north = firstRing.get('east') as DHGCell;
+                cell.north = firstRing.get('eastCell') as DHGCell;
             } else if ((Number.parseInt(key)+1) % 12 < 9) {
-                cell.north = firstRing.get('south') as DHGCell;
+                cell.north = firstRing.get('southCell') as DHGCell;
             } else {
-                cell.north = firstRing.get('west') as DHGCell;
+                cell.north = firstRing.get('westCell') as DHGCell;
             }
 
             //setting east and west
-            cell.east = secondRing.get(String((Number.parseInt(key)-1) % 12)) as DHGCell;
-            cell.west = secondRing.get(String((Number.parseInt(key)+1) % 12)) as DHGCell;
+            cell.east = secondRing.get(String((Number.parseInt(key)+10) % 12 + 1)) as DHGCell;
+            cell.west = secondRing.get(String((Number.parseInt(key)+12) % 12 + 1)) as DHGCell;
 
             //setting south
             cell.south = thirdRing.get(String(Number.parseInt(key))) as DHGCell;
         }
 
         
-        for (const key in thirdRing) {
+        for (const key of thirdRing.keys()) {
             let cell:DHGCell = thirdRing.get(key) as DHGCell
             allCells.set(cell.cellId, cell);
             //set Ring and sector
@@ -169,8 +169,8 @@ export class DHGMap{
             cell.north = secondRing.get(String(Number.parseInt(key))) as DHGCell;
 
             //setting east and west
-            cell.east = thirdRing.get(String((Number.parseInt(key)-1) % 12)) as DHGCell;
-            cell.west = thirdRing.get(String((Number.parseInt(key)+1) % 12)) as DHGCell;
+            cell.east = thirdRing.get(String((Number.parseInt(key)+10) % 12 + 1)) as DHGCell;
+            cell.west = thirdRing.get(String((Number.parseInt(key)+12) % 12 + 1)) as DHGCell;
 
             //no south, edge of the map
         }
@@ -178,7 +178,7 @@ export class DHGMap{
         return new DHGMap(allCells,center,firstRing,secondRing,thirdRing);
     }
 
-    getCellbyId(cell:DHGCell):DHGCell | undefined{
-        return this.allCells.get(cell.cellId);
+    getCellbyId(cellId:number):DHGCell | undefined{
+        return this.allCells.get(cellId);
     }
 }

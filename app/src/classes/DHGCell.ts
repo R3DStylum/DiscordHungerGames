@@ -42,13 +42,13 @@ enum Sector {
 
 export class DHGCell {
 
-    static nowhere = new DHGCell(-1, (undefined as unknown as TextChannel), (undefined as unknown as Role), null, null, null)
+    static nowhere = new DHGCell(-1, (undefined as unknown as TextChannel), (undefined as unknown as Role), undefined, undefined, undefined)
 
-    //north is towards the center of the Map. south is towards the border, and is null if you are at the border cells.
+    //north is towards the center of the Map. south is towards the border, and is undefined if you are at the border cells.
     //west and east are towards the left (or clockwise) and the right(or counter-clockwise) respectively.
-    north: DHGCell  | null;
-    west: DHGCell | null;
-    east: DHGCell | null;
+    north: DHGCell  | undefined;
+    west: DHGCell | undefined;
+    east: DHGCell | undefined;
     south?: DHGCell | {southwest:DHGCell, southsouth:DHGCell, southeast:DHGCell};
 
     ring:number | Ring;
@@ -60,9 +60,9 @@ export class DHGCell {
     constructor(cellId : number,
                 channel:TextChannel,
                 role:Role,
-                north:DHGCell  | null, 
-                west:DHGCell | null, 
-                east:DHGCell | null, 
+                north:DHGCell  | undefined, 
+                west:DHGCell | undefined, 
+                east:DHGCell | undefined, 
                 south?:DHGCell | {southwest:DHGCell, southsouth:DHGCell, southeast:DHGCell})
     {
         this.cellId = cellId;
@@ -93,7 +93,7 @@ export class DHGCell {
         channel.permissionOverwrites.create(process.env.CLIENT_ID as string,{ViewChannel:true})
         channel.permissionOverwrites.create(role,{ViewChannel:true})
         channel.permissionOverwrites.create(everyoneRole,{ViewChannel:false})
-        return new DHGCell(cellId,channel,role,null,null,null);
+        return new DHGCell(cellId,channel,role,undefined,undefined,undefined);
     }
 
     static async cleanupCells(guild:Guild):Promise<void[]>{
@@ -111,11 +111,79 @@ export class DHGCell {
     }
 
     isFullyLinked():boolean{
-        return ((this.north != null) && (this.west != null) && (this.east != null));
+        return ((this.north != undefined) && (this.west != undefined) && (this.east != undefined));
     }
 
-    neighbors():{north: DHGCell | null, west: DHGCell | null, east: DHGCell | null, south?: DHGCell | {southwest:DHGCell, southsouth:DHGCell, southeast:DHGCell} | null}{
-        return {north: this.north, east: this.east, west:this.west, south: this.south}
+    neighbors(range?:number):DHGCell[]{
+        const ret:DHGCell[] = []
+        if(this.north != undefined){
+            ret.push(this.north);
+        }
+        if(this.east != undefined){
+            ret.push(this.east);
+        }
+        if(this.west != undefined){
+            ret.push(this.west);
+        }
+        if(this.south instanceof DHGCell){
+            ret.push(this.south);
+            return ret;
+        }else if(this.south === undefined){
+            return ret;
+        }else{
+            if(this.south.southeast != undefined){
+                ret.push(this.south.southeast);
+            }
+            if(this.south.southsouth != undefined){
+                ret.push(this.south.southsouth);
+            }
+            if(this.south.southwest != undefined){
+                ret.push(this.south.southwest);
+            }
+            return ret;
+        }
+    }
+
+    getNeighborsByRange(range:number):DHGCell[]{
+        const ret:Set<DHGCell> = new Set<DHGCell>();
+        ret.add(this);
+        const remaining:[number,DHGCell][] = [];
+        remaining.push([0,this]);
+        while(remaining.length > 0){
+            const curr = remaining.pop() as [number,DHGCell];
+            if(curr[0] < range){
+                for(let cell of curr[1].neighbors()){
+                    if(!ret.has(cell)){
+                        ret.add(cell);
+                        remaining.push([curr[0]+1,cell]);
+                    }
+                }
+            }
+        }
+
+        return Array.from(ret);
+    }
+
+    getNeighborByDirection(direction:string):DHGCell | undefined{
+        switch(direction){
+            case "north":
+                return this.north;
+            case "west":
+                return this.west;
+            case "east":
+                return this.east;
+            case "southwest":
+                if(this.south instanceof DHGCell || this.south === undefined){return this.south}
+                return this.south.southwest;
+            case "southeast":
+                if(this.south instanceof DHGCell || this.south === undefined){return this.south}
+                return this.south.southwest;
+            case "southsouth":
+                if(this.south instanceof DHGCell || this.south === undefined){return this.south}
+                return this.south.southsouth
+            default:
+                return undefined;
+        }
     }
 
 }
