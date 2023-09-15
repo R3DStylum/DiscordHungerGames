@@ -1,8 +1,34 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CategoryChannel, ChannelType, Client, Guild, GuildBasedChannel, GuildChannel, GuildMember, MessageFlags, TextChannel } from "discord.js";
 import { DHGMap } from "./DHGMap";
-import { DHGPlayer } from "./DHGPlayer";
+import { DHGPlayer } from "./actors/DHGPlayer";
 import "dotenv/config";
-import { DHGError } from "./Errors/DHGError";
+import { DHGWeapon, DHGWeaponTemplates } from "./objects/DHGWeapon";
+import { DHGObject } from "./objects/DHGObject";
+import { DHGCell } from "./DHGCell";
+
+export enum DHGResponseCode {
+    // PANIC
+    UNKNOWN_ERROR = -1,
+    // OXX good response
+    OK = 0,
+    // 1XX incomplete response
+    // 2XX Discord Error
+    // 3XX Manager Error
+    MANAGER_CREATION_ERROR = 300,
+    PLAYER_NOT_FOUND = 301,
+    // 4XX Player Error
+    // 5XX Map, Cell Errors
+    MAP_CREATION_ERROR = 500,
+    CELL_CREATION_ERROR = 501,
+    CELL_NOT_FOUND = 502,
+    // 6XX Object, ObjectTemplate & LootTable Error
+    OBJECT_CREATION_ERROR = 600,
+    TEMPLATE_CREATION_ERROR = 601,
+    LOOT_TABLE_CREATION_ERROR = 602,
+    OBJECT_NOT_FOUND = 603,
+    TEMPLATE_NOT_FOUND = 604,
+    OBJECT_WRONG_TYPE = 605,
+}
 
 enum State {
     ERROR = -3,
@@ -31,6 +57,7 @@ export class DHGManager {
 
     map:DHGMap;
 
+
     private constructor(guild:Guild, channels:{
             adminCategoryChannel:CategoryChannel,
             playerCategoryChannel:CategoryChannel,
@@ -52,6 +79,7 @@ export class DHGManager {
         DHGManager.managers.set(guild.id, this);
     }
 
+    //real constructor
     static async createManager(guild:Guild):Promise<void>{
         let adminChannel:CategoryChannel | undefined = guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildCategory && channel.name === 'dhg admin'}) as CategoryChannel;
         if(adminChannel === undefined){
@@ -122,6 +150,7 @@ export class DHGManager {
         new DHGManager(guild, channels,await DHGMap.createMap(guild));
     }
 
+    //send register buttons
     async sendInvitations(nbParticipants:bigint):Promise<void>{
         const everyoneRole = this.guild.roles.everyone;
         const teamSize = nbParticipants/(BigInt(12));
@@ -158,12 +187,22 @@ export class DHGManager {
                 })
             }
             await invitesChannel.send({
-                content: `<@${this.guild.roles.everyone}>` + 'Register for the Discord Hunger Games ! Blood and Glory awaits !',
+                content: `${this.guild.roles.everyone}` + 'Register for the Discord Hunger Games ! Blood and Glory awaits !',
+                flags: [MessageFlags.SuppressNotifications],
             })
-            await invitesChannel.permissionOverwrites.create(everyoneRole,{ViewChannel:false})
+            await invitesChannel.permissionOverwrites.create(everyoneRole,{ViewChannel:true})
         }
     }
 
+    //manager related
+    static getManagerByGuild(guild:Guild){
+        return this.managers.get(guild.id);
+    }
+    static getManagerByGuildId(guildId:string){
+        return this.managers.get(guildId);
+    }
+
+    //Player related
     async registerPlayer(member:GuildMember, district?:number, participantNumber?: number): Promise<boolean>{
         if (this.players.get(member.id) === undefined) {
             const player = await DHGPlayer.createPlayer(member, this.guild as Guild);
@@ -175,20 +214,68 @@ export class DHGManager {
             return new Promise<boolean>(() => {return false});
         }
     }
-
-    getPlayer(member:GuildMember):DHGPlayer | undefined{
-        return this.players.get(member.id);
-    }
-    getPlayerById(id:string):DHGPlayer | undefined{
+    private getPlayerById(id:string):DHGPlayer | undefined{
         return this.players.get(id);
     }
+    movePlayer(playerId:string, destination:number | string)
+            : DHGResponseCode.PLAYER_NOT_FOUND 
+            | DHGResponseCode.CELL_NOT_FOUND 
+            | DHGResponseCode.OK
+            | DHGResponseCode.UNKNOWN_ERROR
+    {
+        const player = this.getPlayerById(playerId);
+        if(player == undefined){return DHGResponseCode.PLAYER_NOT_FOUND;}
+        var dest: DHGCell | undefined;
+        switch(typeof destination){
+            case "string":
+                dest = player.location.getNeighborByDirection(destination);
+            case "number":
+                dest = this.map.getCellbyId(destination as number);
+        }
+        if(dest == undefined){return DHGResponseCode.CELL_NOT_FOUND;}
+        this.guild.members.fetch(player.id).then((member) => {
+            const oldRole = member.roles.cache.get(player.location.roleId)
+            if(oldRole != undefined){
+                member.roles.remove(oldRole);
+            }
+            player.move(dest as DHGCell);
+            const newRole = member.roles.cache.get((dest as DHGCell).roleId)
+            if(newRole != undefined){
+                member.roles.add(newRole);
+            }
+        });
 
-    static getManagerByGuild(guild:Guild){
-        return this.managers.get(guild.id);
+        return DHGResponseCode.OK;
     }
-    static getManagerByGuildId(guildId:string){
-        return this.managers.get(guildId);
+    equipPlayer(playerId:string, weaponId:string | number)
+            : DHGResponseCode.OK
+            | DHGResponseCode.UNKNOWN_ERROR
+            | DHGResponseCode.PLAYER_NOT_FOUND
+            | DHGResponseCode.TEMPLATE_NOT_FOUND
+            | DHGResponseCode.OBJECT_NOT_FOUND
+            | DHGResponseCode.OBJECT_WRONG_TYPE
+    {
+        const player = this.getPlayerById(playerId);
+        if(player == undefined){return DHGResponseCode.PLAYER_NOT_FOUND;}
+        var weapon:DHGObject | undefined;
+        switch(typeof weaponId){
+            case "string":
+                const weaponBuilder = DHGWeaponTemplates.getTemplate(weaponId);
+                if(weaponBuilder == undefined){return DHGResponseCode.TEMPLATE_NOT_FOUND}
+                weapon = weaponBuilder.build();
+                player.equip(weapon as DHGWeapon);
+                return DHGResponseCode.OK;
+            case "number":
+                weapon = DHGObject.getObjectById(weaponId);
+                if(weapon == undefined){return DHGResponseCode.OBJECT_NOT_FOUND}
+                if(!(weapon instanceof DHGWeapon)){return DHGResponseCode.OBJECT_WRONG_TYPE}
+                player.equip(weapon as DHGWeapon)
+                return DHGResponseCode.OK;
+            default: 
+                return DHGResponseCode.UNKNOWN_ERROR
+        }
     }
 
+    // Map related
 
 }

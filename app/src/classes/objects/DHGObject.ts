@@ -1,4 +1,4 @@
-import { DHGPlayer } from "../DHGPlayer";
+import { DHGPlayer } from "../actors/DHGPlayer";
 import { DHGManager } from "../DHGManager";
 import { DHGWeapon, DHGWeaponTemplates } from "./DHGWeapon";
 import { DHGValidationError } from "../Errors/DHGValidationError";
@@ -26,6 +26,9 @@ export class DHGObject {
         DHGObject.allObjects.set(this.id, this);
     }
 
+    static getObjectById(objectId:number){
+        return this.allObjects.get(objectId);
+    }
 }
 
 export class DHGObjectBuilder {

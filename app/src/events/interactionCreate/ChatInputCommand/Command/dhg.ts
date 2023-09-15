@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashCommandSubcommandGroupBuilder, SlashCommandSubcommandBuilder, SlashCommandUserOption, SlashCommandStringOption, SlashCommandNumberOption, GuildMember } from "discord.js";
 import { Command } from "./Command";
-import { DHGManager } from "../../../../classes/DHGManager";
+import { DHGManager, DHGResponseCode } from "../../../../classes/DHGManager";
 import { DHGWeapon } from "../../../../classes/objects/DHGWeapon";
 
 
@@ -22,6 +22,7 @@ export class dhg extends Command{
                 .addUserOption(new SlashCommandUserOption()
                     .setName('target')
                     .setDescription('the player targeted by the attack')
+                    .setRequired(true)
                 )
             ).addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('move')
@@ -82,19 +83,25 @@ export class dhg extends Command{
         );
 
     handler: (interaction: ChatInputCommandInteraction<CacheType>) => void = (interaction: ChatInputCommandInteraction) => {
+        const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
+        if(manager === undefined){interaction.reply({ephemeral:true, content: "could not find a manager for this server. have you done /dhgadmin init ?"});return;}
         if(interaction.options.getSubcommandGroup() === 'action'){
-            const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
-            if(manager === undefined){interaction.reply({ephemeral:true, content: "could not find a manager for this server. have you done /dhgadmin init ?"});return;}
-            const player = manager.getPlayerById(interaction.user.id)
-            if(player === undefined){interaction.reply({ephemeral:true, content: "You are not registered"});return;}
-            
+            const playerId = (interaction.options.getMember('player') as GuildMember).id;
+            const dest = interaction.options.getString('direction',true);
             if(interaction.options.getSubcommand() === 'move'){
-                const dest = player.location.getNeighborByDirection(interaction.options.getString('direction') as string);
-                if(dest != undefined){
-                    player.move(dest);
-                    interaction.reply({ephemeral:true, content:"you moved !"});
-                }else{
-                    interaction.reply({ephemeral:true, content:"Move failed. check if the direction you are moving to is right"});
+                switch(manager.movePlayer(playerId, dest)){
+                case DHGResponseCode.PLAYER_NOT_FOUND:
+                    interaction.reply({ephemeral: true, content:"Failed to move player, player is not registered"});
+                    return;
+                case DHGResponseCode.CELL_NOT_FOUND:
+                    interaction.reply({ephemeral: true, content:"Failed to move player, cell doesn't exist"});
+                    return;
+                case DHGResponseCode.OK: 
+                    interaction.reply({content: `moved player <@${playerId}> to cell ${dest}`});
+                    return;
+                default:
+                    interaction.reply({ephemeral: true, content: "command failed"});
+                    return;
                 }
             }
             if(interaction.options.getSubcommand() === 'attack'){
@@ -102,19 +109,17 @@ export class dhg extends Command{
                 if(target === undefined){interaction.reply({ephemeral:true, content: "The player you are targeting doesn't exist (is not registered)"});return;}
                 if(player.equipped == undefined){
                     const weapon:DHGWeapon = DHGWeapon.defaultWeapon;
-                    const successes = weapon.resolveAttack(player, target, manager);
-                    interaction.reply(`attack on ${target.mention()} succeeded ${successes} times on ${weapon.attacks}`)
+                    if(!player.canAttack(target)){interaction.reply({content:`you don't have the range to do that`});return;}
+                    const successes = player.attack(target,manager);
+                    interaction.reply(`attack on ${target.mention()} with ${weapon.name} succeeded ${successes} times out of ${weapon.attacks}`)
                 }else{
-                    const successes = player.equipped.resolveAttack(player,target, manager);
-                    interaction.reply(`attack on ${target.mention()} succeeded ${successes} times on ${player.equipped.attacks}`)
+                    if(!player.canAttack(target)){interaction.reply({content:`you don't have the range to do that`});return;}
+                    const successes = player.attack(target,manager);
+                    interaction.reply(`attack on ${target.mention()} with ${player.equipped.name} succeeded ${successes} times out of ${player.equipped.attacks}`)
                 }
             }
         }
         if(interaction.options.getSubcommand() === 'info'){
-            const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
-            if(manager === undefined){interaction.reply({ephemeral:true, content: "could not find a manager for this server. have you done /dhgadmin init ?"});return;}
-            const player = manager.getPlayerById(interaction.user.id)
-            if(player === undefined){interaction.reply({ephemeral:true, content: "You are not registered"});return;}
             interaction.reply(player.selfInfo());
         }
     };

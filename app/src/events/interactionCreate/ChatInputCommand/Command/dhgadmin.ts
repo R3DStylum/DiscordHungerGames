@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashCommandSubcommandBuilder, Guild, SlashCommandSubcommandGroupBuilder, SlashCommandNumberOption, ApplicationCommandOptionBase, SlashCommandUserOption, GuildMember, SlashCommandStringOption, APIApplicationCommandStringOption, APIApplicationCommandOptionChoice } from "discord.js";
 import { Command } from "./Command";
-import { DHGManager } from "../../../../classes/DHGManager";
+import { DHGManager, DHGResponseCode } from "../../../../classes/DHGManager";
 import { DHGCell } from "../../../../classes/DHGCell";
 import { DHGWeapon, DHGWeaponTemplates } from "../../../../classes/objects/DHGWeapon";
 
@@ -25,6 +25,9 @@ export class dhgadmin extends Command{
             ).addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('admin')
                 .setDescription('cleans up everything related with the admin of dhg (dhg categories and dhg general)')
+            ).addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('players')
+                .setDescription('cleans up everything related with the players')
             )
         ).addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('sendinvites')
@@ -82,7 +85,11 @@ export class dhgadmin extends Command{
             DHGManager.createManager(interaction.guild as Guild).then(()=>{
                 interaction.editReply({content: "DHG Initiated"})
             })
+            return;
         }
+
+        const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
+        if(manager === undefined){interaction.reply({ephemeral: true, content:'could not find manager for your server'}); return;}
 
         //cleanup subgroup
         if(interaction.options.getSubcommandGroup() === 'cleanup'){
@@ -105,7 +112,6 @@ export class dhgadmin extends Command{
         //command sendinvites
         if(interaction.options.getSubcommand() === 'sendinvites'){
             interaction.deferReply();
-            const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
             manager?.sendInvitations(BigInt(interaction.options.getNumber('participants',true))).then(()=> {
                 interaction.editReply({content: "all invitations sent, check channel invitations"});
             });
@@ -114,8 +120,6 @@ export class dhgadmin extends Command{
         //group see
         if(interaction.options.getSubcommandGroup() === 'see'){
             if(interaction.options.getSubcommand() === 'players'){
-                const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
-                if(manager === undefined){interaction.reply({ephemeral: true, content:'could not find manager for your server'}); return}
                 interaction.deferReply({ephemeral:false}).then(() => {
                     let content = "";
                     manager.players.forEach((player) => content += player.fullDescription());
@@ -127,27 +131,48 @@ export class dhgadmin extends Command{
 
         //command move
         if(interaction.options.getSubcommand() === 'move'){
-            const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
-            if(manager === undefined){interaction.reply({ephemeral: true, content:'could not find manager for your server'}); return}
-            const player = manager.getPlayer(interaction.options.getMember('player') as GuildMember);
-            const cell = manager.map.getCellbyId(interaction.options.getNumber('cellid') as number);
-            if(player != undefined && cell != undefined){
-                player.location = cell;
-                interaction.reply({content: "player " + player.mention() + " moved to cell " + cell.cellId})
-                return;
-            };
-            interaction.reply({content: "failed to move player " + player + " to cell " + cell})
+            const playerId = (interaction.options.getMember('player') as GuildMember).id;
+            const cellId = interaction.options.getNumber('cellid',true) as number;
+            switch(manager.movePlayer(playerId,cellId)){
+                case DHGResponseCode.PLAYER_NOT_FOUND:
+                    interaction.reply({ephemeral: true, content:"Failed to move player, player is not registered"});
+                    return;
+                case DHGResponseCode.CELL_NOT_FOUND:
+                    interaction.reply({ephemeral: true, content:"Failed to move player, cell doesn't exist"});
+                    return;
+                case DHGResponseCode.OK:
+                    interaction.reply({content: `moved player <@${playerId}> to cell ${cellId}`});
+                    return;
+                default:
+                    interaction.reply({ephemeral: true, content: "command failed"});
+                    return;
+            }
         }
 
         if(interaction.options.getSubcommand() === 'equip'){
-            const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
-            if(manager === undefined){interaction.reply({ephemeral: true, content:'could not find manager for your server'}); return;}
-            const player = manager.getPlayer(interaction.options.getMember('player') as GuildMember);
-            if(player == undefined){interaction.reply({ephemeral:true, content: "You are not registered"});return;}
-            const weapon = DHGWeaponTemplates.getTemplate(interaction.options.getString('weapon',true))?.build();
-            if(weapon == undefined){interaction.reply({ephemeral: true, content:"could not find mentined weapon : " + interaction.options.getString('weapon',true)})}
-            player.equip(weapon as DHGWeapon);
-            interaction.reply({content: `${player.mention()} has been equipped with ${(weapon as DHGWeapon).name}`});
+            const playerId = (interaction.options.getMember('player') as GuildMember).id;
+            const weapon = interaction.options.getString('weapon',true);
+            if(weapon == undefined){interaction.reply({ephemeral: true, content:"could not find mentioned weapon : " + interaction.options.getString('weapon',true)})}
+            switch(manager.equipPlayer(playerId,weapon)){    
+                case DHGResponseCode.OK:
+                    interaction.reply({content: `gave <@${playerId}> weapon ${weapon}`});
+                    return;
+                case DHGResponseCode.PLAYER_NOT_FOUND:
+                    interaction.reply({ephemeral:true, content:"failed to give player weapon, player is not registered"});
+                    return;
+                case DHGResponseCode.OBJECT_NOT_FOUND:
+                    interaction.reply({ephemeral:true, content:"failed to give player weapon, Object does not exist"});
+                    return;
+                case DHGResponseCode.TEMPLATE_NOT_FOUND:
+                    interaction.reply({ephemeral:true, content:"failed to give player weapon, Object template not found"});
+                    return;
+                case DHGResponseCode.OBJECT_WRONG_TYPE:
+                    interaction.reply({ephemeral:true, content:"failed to give player weapon, Object if of the wrong type"});
+                    return;
+                default:
+                    interaction.reply({ephemeral: true, content: "command failed"});
+                    return;
+            }
         }
     };
     

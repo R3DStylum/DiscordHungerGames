@@ -1,10 +1,10 @@
 import { CategoryChannel, ChannelType, Guild, GuildMember, Role, TextChannel } from "discord.js";
-import { DHGObject } from "./objects/DHGObject";
-import { DHGManager } from "./DHGManager";
-import { DHGError } from "./Errors/DHGError";
-import { DHGAction } from "./actions/DHGAction";
-import { DHGCell } from "./DHGCell";
-import { DHGWeapon } from "./objects/DHGWeapon";
+import { DHGObject } from "../objects/DHGObject";
+import { DHGManager } from "../DHGManager";
+import { DHGError } from "../Errors/DHGError";
+import { DHGAction } from "../actions/DHGAction";
+import { DHGCell } from "../DHGCell";
+import { DHGWeapon } from "../objects/DHGWeapon";
 
 enum State {
     ELIMINATED = -1,
@@ -146,6 +146,11 @@ export class DHGPlayer{
         desc += (this.poison != undefined ? "Poison : " + this.poison + "\n" : "\n");
 
         desc += "Held : " + (this.equipped != undefined ? `${this.equipped.name}` : "Nothing") + "\n";
+        desc += "Inventory : ";
+        for(let item of this.inventory){
+            desc += "[" + item.name + "]"
+        }
+        desc += "\n";
 
         return desc;
     }
@@ -154,6 +159,12 @@ export class DHGPlayer{
         let desc = this.selfInfo();
         desc += "Location : " + this.location.cellId + "\n";
         return desc;
+    }
+
+    canAttack(target:DHGPlayer){
+        if(this.state != State.ALIVE){return false;}
+        const weapon = (this.equipped != undefined ? this.equipped : DHGWeapon.defaultWeapon);
+        return this.location.getNeighborsByRange(weapon.range).includes(target.location);
     }
 
     mention():string{
@@ -174,6 +185,10 @@ export class DHGPlayer{
         if(this.health <= 0){
             this.state = State.DEAD;
         }
+    }
+    attack(target:DHGPlayer, manager?:DHGManager){
+        const weapon = (this.equipped != undefined ? this.equipped : DHGWeapon.defaultWeapon);
+        return weapon.resolveAttack(this, target, manager);
     }
 
 }

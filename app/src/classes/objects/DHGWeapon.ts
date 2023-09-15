@@ -1,5 +1,5 @@
 import { DHGManager } from "../DHGManager";
-import { DHGPlayer } from "../DHGPlayer";
+import { DHGPlayer } from "../actors/DHGPlayer";
 import { DHGValidationError } from "../Errors/DHGValidationError";
 import { DHGObject, DHGObjectBuilder, DHGObjectTemplates, DHGObjectType } from "./DHGObject"
 
@@ -16,7 +16,7 @@ export class DHGWeapon extends DHGObject{
     range:number = 0;
     noise:number = 0;
 
-    before?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
+    before:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
     use:(user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) => boolean = (user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) =>{
         const roll = Math.floor(Math.random() * 100);
         console.log(`rolled ${roll}`)
@@ -26,9 +26,9 @@ export class DHGWeapon extends DHGObject{
         }
         return false;
     }
-    after?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
-    onSuccess?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
-    onFailure?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
+    after:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
+    onSuccess:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
+    onFailure:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
 
     constructor(name:string, 
         attacks:number,
@@ -36,11 +36,11 @@ export class DHGWeapon extends DHGObject{
         accuracy: number,
         range?:number,
         noise?:number,
-        before?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void,
+        before?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[],
         use?:(user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) => boolean,
-        after?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void,
-        onSuccess?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void,
-        onFailure?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void
+        after?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[],
+        onSuccess?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[],
+        onFailure?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[]
     ){
         super(name)
         this.attacks = attacks;
@@ -73,14 +73,14 @@ export class DHGWeapon extends DHGObject{
         let successes:number = 0;
         if(attacks == undefined){attacks = this.attacks}
         for(let i = 0; i < attacks; i++){
-            if(this.before != undefined){this.before(user,target,manager)}
+            for(let fn of this.before){fn(user,target,manager)}
             if(this.use(user,target,manager)){
                 successes += 1;
-                if(this.onSuccess != undefined){this.onSuccess(user,target,manager)}
+                for(let fn of this.onSuccess){fn(user,target,manager)}
             }else{
-                if(this.onFailure != undefined){this.onFailure(user,target,manager)}
+                for(let fn of this.onFailure){fn(user,target,manager)}
             }
-            if(this.after != undefined){this.after(user,target,manager)}
+            for(let fn of this.after){fn(user,target,manager)}
         }
         return successes;
     }
@@ -115,11 +115,11 @@ export class DHGWeaponBuilder extends DHGObjectBuilder {
      */
     noise:number = 0;
 
-    before?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
+    before:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
     use?:(user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) => boolean;
-    after?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
-    onSuccess?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
-    onFailure?:(user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void;
+    after:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
+    onSuccess:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
+    onFailure:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
 
     setName(name:string):DHGWeaponBuilder{
         this.name = name;
@@ -151,8 +151,8 @@ export class DHGWeaponBuilder extends DHGObjectBuilder {
         return this;
     }
 
-    setBefore(before:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
-        this.before = before;
+    addBefore(before:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+        this.before.push(before);
         return this;
     }
 
@@ -161,18 +161,18 @@ export class DHGWeaponBuilder extends DHGObjectBuilder {
         return this;
     }
 
-    setOnFailure(onFailure:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
-        this.onFailure = onFailure;
+    addOnFailure(onFailure:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+        this.onFailure.push(onFailure);
         return this;
     }
 
-    setOnSuccess(onSuccess:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
-        this.onSuccess = onSuccess;
+    addOnSuccess(onSuccess:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+        this.onSuccess.push(onSuccess);
         return this;
     }
 
-    setAfter(after:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
-        this.after = after;
+    addAfter(after:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+        this.after.push(after);
         return this;
     }
 

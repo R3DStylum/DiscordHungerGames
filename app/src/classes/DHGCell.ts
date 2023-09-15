@@ -1,5 +1,6 @@
 import { CategoryChannel, Guild, GuildBasedChannel, ChannelType, ColorResolvable, Role, Client, User, TextChannel } from "discord.js";
 import { transform } from "../utils/cell-transformer";
+import { DHGObject } from "./objects/DHGObject";
 
 enum Ring {
     UNDETERMINED = -1,
@@ -42,7 +43,7 @@ enum Sector {
 
 export class DHGCell {
 
-    static nowhere = new DHGCell(-1, (undefined as unknown as TextChannel), (undefined as unknown as Role), undefined, undefined, undefined)
+    static nowhere = new DHGCell(-1, (undefined as unknown as TextChannel), (undefined as unknown as string), undefined, undefined, undefined)
 
     //north is towards the center of the Map. south is towards the border, and is undefined if you are at the border cells.
     //west and east are towards the left (or clockwise) and the right(or counter-clockwise) respectively.
@@ -55,14 +56,16 @@ export class DHGCell {
     sector:number | Sector;
     cellId: number;
     channel: TextChannel;
-    role: Role;
+    roleId: string;
+
+    loot:DHGObject[] = [];
 
     constructor(cellId : number,
                 channel:TextChannel,
-                role:Role,
-                north:DHGCell  | undefined, 
-                west:DHGCell | undefined, 
-                east:DHGCell | undefined, 
+                roleId:string,
+                north?:DHGCell, 
+                west?:DHGCell, 
+                east?:DHGCell, 
                 south?:DHGCell | {southwest:DHGCell, southsouth:DHGCell, southeast:DHGCell})
     {
         this.cellId = cellId;
@@ -76,12 +79,11 @@ export class DHGCell {
         this.sector = Sector.UNDETERMINED;
 
         this.channel = channel;
-        this.role = role;
+        this.roleId = roleId;
     }
 
     static async newEmptyCell(cellId:number, guild:Guild):Promise<DHGCell>{
         const everyoneRole:Role = guild.roles.everyone;
-        // create cells channel here ?
         const role = await guild.roles.create({
             name:"cell-"+transform(cellId)
         })
@@ -93,7 +95,7 @@ export class DHGCell {
         channel.permissionOverwrites.create(process.env.CLIENT_ID as string,{ViewChannel:true})
         channel.permissionOverwrites.create(role,{ViewChannel:true})
         channel.permissionOverwrites.create(everyoneRole,{ViewChannel:false})
-        return new DHGCell(cellId,channel,role,undefined,undefined,undefined);
+        return new DHGCell(cellId,channel,role.id,undefined,undefined,undefined);
     }
 
     static async cleanupCells(guild:Guild):Promise<void[]>{
@@ -114,7 +116,7 @@ export class DHGCell {
         return ((this.north != undefined) && (this.west != undefined) && (this.east != undefined));
     }
 
-    neighbors(range?:number):DHGCell[]{
+    neighbors():DHGCell[]{
         const ret:DHGCell[] = []
         if(this.north != undefined){
             ret.push(this.north);
