@@ -1,6 +1,6 @@
 import { ButtonInteraction, CacheType, Guild, GuildMember } from "discord.js";
 import { ButtonHandler } from "./ButtonHandler";
-import { DHGGameManager } from "../../../classes/DHGGameManager";
+import { DHGGameManager } from "../../../classes/managers/DHGGameManager";
 
 
 export class participant extends ButtonHandler{

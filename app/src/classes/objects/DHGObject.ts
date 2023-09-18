@@ -1,5 +1,5 @@
 import { DHGPlayer } from "../actors/DHGPlayer";
-import { DHGGameManager } from "../DHGGameManager";
+import { DHGGameManager } from "../managers/DHGGameManager";
 import { DHGWeapon, DHGWeaponTemplates } from "./DHGWeapon";
 import { DHGValidationError } from "../Errors/DHGValidationError";
 

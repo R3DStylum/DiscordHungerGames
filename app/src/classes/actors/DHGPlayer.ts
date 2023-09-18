@@ -1,9 +1,9 @@
 import { CategoryChannel, ChannelType, Guild, GuildMember, Role, TextChannel } from "discord.js";
 import { DHGObject } from "../objects/DHGObject";
-import { DHGGameManager } from "../DHGGameManager";
+import { DHGGameManager } from "../managers/DHGGameManager";
 import { DHGError } from "../Errors/DHGError";
 import { DHGAction } from "../actions/DHGAction";
-import { DHGCell } from "../DHGCell";
+import { DHGCell } from "../map/DHGCell";
 import { DHGWeapon } from "../objects/DHGWeapon";
 import { DHGActor, DHGState } from "./DHGActor";
 

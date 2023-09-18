@@ -1,5 +1,5 @@
-import { DHGCell } from "../DHGCell";
-import { DHGGameManager } from "../DHGGameManager";
+import { DHGCell } from "../map/DHGCell";
+import { DHGGameManager } from "../managers/DHGGameManager";
 
 export enum DHGState {
     ELIMINATED = -1,

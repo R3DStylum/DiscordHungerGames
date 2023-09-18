@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashCommandSubcommandGroupBuilder, SlashCommandSubcommandBuilder, SlashCommandUserOption, SlashCommandStringOption, SlashCommandNumberOption, GuildMember } from "discord.js";
 import { Command } from "./Command";
-import { DHGManager, DHGResponseCode } from "../../../../classes/DHGGameManager";
+import { DHGManager, DHGResponseCode } from "../../../../classes/managers/DHGGameManager";
 import { DHGWeapon } from "../../../../classes/objects/DHGWeapon";
 
 

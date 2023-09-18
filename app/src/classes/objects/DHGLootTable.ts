@@ -1,5 +1,5 @@
-import { DHGError } from "./Errors/DHGError";
-import { DHGObject, DHGObjectBuilder } from "./objects/DHGObject";
+import { DHGError } from "../Errors/DHGError";
+import { DHGObject, DHGObjectBuilder } from "./DHGObject";
 
 export class DHGLootTable {
 

@@ -1,4 +1,4 @@
-import { DHGGameManager } from "../DHGGameManager";
+import { DHGGameManager } from "../managers/DHGGameManager";
 import { DHGActor } from "../actors/DHGActor";
 import { DHGValidationError } from "../Errors/DHGValidationError";
 import { DHGObject, DHGObjectBuilder, DHGObjectTemplates, DHGObjectType } from "./DHGObject"

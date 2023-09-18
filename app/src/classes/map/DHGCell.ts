@@ -1,6 +1,6 @@
 import { CategoryChannel, Guild, GuildBasedChannel, ChannelType, ColorResolvable, Role, Client, User, TextChannel } from "discord.js";
-import { transform } from "../utils/cell-transformer";
-import { DHGObject } from "./objects/DHGObject";
+import { transform } from "../../utils/cell-transformer";
+import { DHGObject } from "../objects/DHGObject";
 
 enum Ring {
     UNDETERMINED = -1,

@@ -1,11 +1,11 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CategoryChannel, ChannelType, Client, Guild, GuildBasedChannel, GuildChannel, GuildMember, MessageFlags, TextChannel } from "discord.js";
-import { DHGMap } from "./DHGMap";
-import { DHGPlayer } from "./actors/DHGPlayer";
+import { DHGMap } from "../map/DHGMap";
+import { DHGPlayer } from "../actors/DHGPlayer";
 import "dotenv/config";
-import { DHGWeapon, DHGWeaponTemplates } from "./objects/DHGWeapon";
-import { DHGObject } from "./objects/DHGObject";
-import { DHGCell } from "./DHGCell";
-import { DHGActor } from "./actors/DHGActor";
+import { DHGWeapon, DHGWeaponTemplates } from "../objects/DHGWeapon";
+import { DHGObject } from "../objects/DHGObject";
+import { DHGCell } from "../map/DHGCell";
+import { DHGActor } from "../actors/DHGActor";
 
 export enum DHGResponseCode {
     // PANIC

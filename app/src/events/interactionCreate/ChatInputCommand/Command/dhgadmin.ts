@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashCommandSubcommandBuilder, Guild, SlashCommandSubcommandGroupBuilder, SlashCommandNumberOption, ApplicationCommandOptionBase, SlashCommandUserOption, GuildMember, SlashCommandStringOption, APIApplicationCommandStringOption, APIApplicationCommandOptionChoice } from "discord.js";
 import { Command } from "./Command";
-import { DHGGameManager, DHGResponseCode } from "../../../../classes/DHGGameManager";
-import { DHGCell } from "../../../../classes/DHGCell";
+import { DHGGameManager, DHGResponseCode } from "../../../../classes/managers/DHGGameManager";
+import { DHGCell } from "../../../../classes/map/DHGCell";
 import { DHGWeapon, DHGWeaponTemplates } from "../../../../classes/objects/DHGWeapon";
 
 export class dhgadmin extends Command{
