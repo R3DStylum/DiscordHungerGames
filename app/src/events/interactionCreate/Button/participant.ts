@@ -1,6 +1,6 @@
 import { ButtonInteraction, CacheType, Guild, GuildMember } from "discord.js";
 import { ButtonHandler } from "./ButtonHandler";
-import { DHGManager } from "../../../classes/DHGManager";
+import { DHGGameManager } from "../../../classes/DHGGameManager";
 
 
 export class participant extends ButtonHandler{
@@ -9,7 +9,7 @@ export class participant extends ButtonHandler{
         const participantIdentifier = interaction.customId.split(":")[1].split("-");
         const district = Number(participantIdentifier[0]);
         const participantNumber = Number(participantIdentifier[1]);
-        const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
+        const manager = DHGGameManager.getManagerByGuildId(interaction.guild?.id as string);
         if (manager === undefined){interaction.reply({ephemeral:true, content:'could not find a manager for this game, try DHG init'}); return}
         manager.registerPlayer(interaction.member as GuildMember, district, participantNumber).then((success) => {
             if(success){

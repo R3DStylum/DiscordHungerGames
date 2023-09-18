@@ -5,6 +5,7 @@ import "dotenv/config";
 import { DHGWeapon, DHGWeaponTemplates } from "./objects/DHGWeapon";
 import { DHGObject } from "./objects/DHGObject";
 import { DHGCell } from "./DHGCell";
+import { DHGActor } from "./actors/DHGActor";
 
 export enum DHGResponseCode {
     // PANIC
@@ -16,7 +17,9 @@ export enum DHGResponseCode {
     // 3XX Manager Error
     MANAGER_CREATION_ERROR = 300,
     PLAYER_NOT_FOUND = 301,
-    // 4XX Player Error
+    // 4XX Player & Actor Error
+    ACTOR_CREATION_ERROR = 400,
+    ACTOR_NOT_FOUND = 401,
     // 5XX Map, Cell Errors
     MAP_CREATION_ERROR = 500,
     CELL_CREATION_ERROR = 501,
@@ -41,13 +44,14 @@ enum State {
     FINISHED = 4,
 }
 
-export class DHGManager {
-    static managers:Map<string,DHGManager> = new Map();
+export class DHGGameManager {
+    static managers:Map<string,DHGGameManager> = new Map();
 
     turn: Number = 0;
     state: Number = State.INIT;
     players: Map<string,DHGPlayer>;
 
+    guildId:string;
     guild:Guild;
 
     adminCategoryChannel:CategoryChannel;
@@ -56,7 +60,6 @@ export class DHGManager {
     otherCategoryChannel:CategoryChannel;
 
     map:DHGMap;
-
 
     private constructor(guild:Guild, channels:{
             adminCategoryChannel:CategoryChannel,
@@ -70,13 +73,14 @@ export class DHGManager {
         this.state = State.PREPARED;
 
         this.guild = guild;
+        this.guildId = guild.id;
         this.adminCategoryChannel = channels.adminCategoryChannel;
         this.playerCategoryChannel = channels.playerCategoryChannel;
         this.cellsCategoryChannel = channels.cellsCategoryChannel;
         this.otherCategoryChannel = channels.otherCategoryChannel;
         
         
-        DHGManager.managers.set(guild.id, this);
+        DHGGameManager.managers.set(guild.id, this);
     }
 
     //real constructor
@@ -147,7 +151,7 @@ export class DHGManager {
             otherCategoryChannel:otherChannel
         }
 
-        new DHGManager(guild, channels,await DHGMap.createMap(guild));
+        new DHGGameManager(guild, channels,await DHGMap.createMap(guild));
     }
 
     //send register buttons
@@ -214,8 +218,8 @@ export class DHGManager {
             return new Promise<boolean>(() => {return false});
         }
     }
-    private getPlayerById(id:string):DHGPlayer | undefined{
-        return this.players.get(id);
+    private getPlayerById(memberId:string):DHGPlayer | undefined{
+        return this.players.get(memberId);
     }
     movePlayer(playerId:string, destination:number | string)
             : DHGResponseCode.PLAYER_NOT_FOUND 
@@ -233,7 +237,7 @@ export class DHGManager {
                 dest = this.map.getCellbyId(destination as number);
         }
         if(dest == undefined){return DHGResponseCode.CELL_NOT_FOUND;}
-        this.guild.members.fetch(player.id).then((member) => {
+        this.guild.members.fetch(player.discordId as string).then((member) => {
             const oldRole = member.roles.cache.get(player.location.roleId)
             if(oldRole != undefined){
                 member.roles.remove(oldRole);
@@ -274,6 +278,18 @@ export class DHGManager {
             default: 
                 return DHGResponseCode.UNKNOWN_ERROR
         }
+    }
+    manageAttack(attackerId:number, defenderId:number)
+            : DHGResponseCode.OK
+            | DHGResponseCode.UNKNOWN_ERROR
+            | DHGResponseCode.ACTOR_NOT_FOUND
+    {   
+        let attacker = DHGActor.getActorById(attackerId);
+        if(attacker == undefined){return DHGResponseCode.ACTOR_NOT_FOUND}
+        let defender = DHGActor.getActorById(defenderId);
+        if(defender == undefined){return DHGResponseCode.ACTOR_NOT_FOUND}
+        
+        return DHGResponseCode.UNKNOWN_ERROR;
     }
 
     // Map related

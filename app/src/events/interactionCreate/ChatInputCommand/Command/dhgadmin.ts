@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, CacheType, SlashCommandSubcommandBuilder, Guild, SlashCommandSubcommandGroupBuilder, SlashCommandNumberOption, ApplicationCommandOptionBase, SlashCommandUserOption, GuildMember, SlashCommandStringOption, APIApplicationCommandStringOption, APIApplicationCommandOptionChoice } from "discord.js";
 import { Command } from "./Command";
-import { DHGManager, DHGResponseCode } from "../../../../classes/DHGManager";
+import { DHGGameManager, DHGResponseCode } from "../../../../classes/DHGGameManager";
 import { DHGCell } from "../../../../classes/DHGCell";
 import { DHGWeapon, DHGWeaponTemplates } from "../../../../classes/objects/DHGWeapon";
 
@@ -82,13 +82,13 @@ export class dhgadmin extends Command{
         //command init
         if(interaction.options.getSubcommand() === 'init'){
             interaction.deferReply();
-            DHGManager.createManager(interaction.guild as Guild).then(()=>{
+            DHGGameManager.createManager(interaction.guild as Guild).then(()=>{
                 interaction.editReply({content: "DHG Initiated"})
             })
             return;
         }
 
-        const manager = DHGManager.getManagerByGuildId(interaction.guild?.id as string);
+        const manager = DHGGameManager.getManagerByGuildId(interaction.guild?.id as string);
         if(manager === undefined){interaction.reply({ephemeral: true, content:'could not find manager for your server'}); return;}
 
         //cleanup subgroup

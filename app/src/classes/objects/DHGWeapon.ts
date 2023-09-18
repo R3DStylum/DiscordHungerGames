@@ -1,5 +1,5 @@
-import { DHGManager } from "../DHGManager";
-import { DHGPlayer } from "../actors/DHGPlayer";
+import { DHGGameManager } from "../DHGGameManager";
+import { DHGActor } from "../actors/DHGActor";
 import { DHGValidationError } from "../Errors/DHGValidationError";
 import { DHGObject, DHGObjectBuilder, DHGObjectTemplates, DHGObjectType } from "./DHGObject"
 
@@ -16,8 +16,8 @@ export class DHGWeapon extends DHGObject{
     range:number = 0;
     noise:number = 0;
 
-    before:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
-    use:(user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) => boolean = (user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) =>{
+    before:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
+    use:(user:DHGActor,target:DHGActor, manager?:DHGGameManager) => boolean = (user:DHGActor,target:DHGActor, manager?:DHGGameManager) =>{
         const roll = Math.floor(Math.random() * 100);
         console.log(`rolled ${roll}`)
         if(roll < this.accuracy){
@@ -26,9 +26,9 @@ export class DHGWeapon extends DHGObject{
         }
         return false;
     }
-    after:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
-    onSuccess:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
-    onFailure:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
+    after:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
+    onSuccess:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
+    onFailure:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
 
     constructor(name:string, 
         attacks:number,
@@ -36,11 +36,11 @@ export class DHGWeapon extends DHGObject{
         accuracy: number,
         range?:number,
         noise?:number,
-        before?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[],
-        use?:(user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) => boolean,
-        after?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[],
-        onSuccess?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[],
-        onFailure?:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[]
+        before?:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[],
+        use?:(user:DHGActor,target:DHGActor, manager?:DHGGameManager) => boolean,
+        after?:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[],
+        onSuccess?:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[],
+        onFailure?:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[]
     ){
         super(name)
         this.attacks = attacks;
@@ -69,7 +69,7 @@ export class DHGWeapon extends DHGObject{
         }
     }
 
-    resolveAttack(user:DHGPlayer, target:DHGPlayer, manager?:DHGManager, attacks?:number):number{
+    resolveAttack(user:DHGActor, target:DHGActor, manager?:DHGGameManager, attacks?:number):number{
         let successes:number = 0;
         if(attacks == undefined){attacks = this.attacks}
         for(let i = 0; i < attacks; i++){
@@ -83,6 +83,10 @@ export class DHGWeapon extends DHGObject{
             for(let fn of this.after){fn(user,target,manager)}
         }
         return successes;
+    }
+
+    static isWeapon(object:DHGObject): object is DHGWeapon{
+        return object.type === DHGObjectType.WEAPON;
     }
 }
 
@@ -115,11 +119,11 @@ export class DHGWeaponBuilder extends DHGObjectBuilder {
      */
     noise:number = 0;
 
-    before:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
-    use?:(user:DHGPlayer,target:DHGPlayer, manager?:DHGManager) => boolean;
-    after:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
-    onSuccess:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
-    onFailure:((user:DHGPlayer,target?:DHGPlayer, manager?:DHGManager) => void)[] = [];
+    before:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
+    use?:(user:DHGActor,target:DHGActor, manager?:DHGGameManager) => boolean;
+    after:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
+    onSuccess:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
+    onFailure:((user:DHGActor,target?:DHGActor, manager?:DHGGameManager) => void)[] = [];
 
     setName(name:string):DHGWeaponBuilder{
         this.name = name;
@@ -151,27 +155,27 @@ export class DHGWeaponBuilder extends DHGObjectBuilder {
         return this;
     }
 
-    addBefore(before:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+    addBefore(before:(user:DHGActor, target?:DHGActor, manager?:DHGGameManager) => void):DHGWeaponBuilder{
         this.before.push(before);
         return this;
     }
 
-    setUse(use:(user:DHGPlayer, target:DHGPlayer, manager?:DHGManager) => boolean):DHGWeaponBuilder{
+    setUse(use:(user:DHGActor, target:DHGActor, manager?:DHGGameManager) => boolean):DHGWeaponBuilder{
         this.use = use;
         return this;
     }
 
-    addOnFailure(onFailure:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+    addOnFailure(onFailure:(user:DHGActor, target?:DHGActor, manager?:DHGGameManager) => void):DHGWeaponBuilder{
         this.onFailure.push(onFailure);
         return this;
     }
 
-    addOnSuccess(onSuccess:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+    addOnSuccess(onSuccess:(user:DHGActor, target?:DHGActor, manager?:DHGGameManager) => void):DHGWeaponBuilder{
         this.onSuccess.push(onSuccess);
         return this;
     }
 
-    addAfter(after:(user:DHGPlayer, target?:DHGPlayer, manager?:DHGManager) => void):DHGWeaponBuilder{
+    addAfter(after:(user:DHGActor, target?:DHGActor, manager?:DHGGameManager) => void):DHGWeaponBuilder{
         this.after.push(after);
         return this;
     }
@@ -195,7 +199,8 @@ export class DHGWeaponBuilder extends DHGObjectBuilder {
             throw new DHGValidationError("Weapon needs a positive damage value");
         }
 
-        return new DHGWeapon(this.name, this.attacks, this.damage, this.accuracy, this.range, this.noise);
+        return new DHGWeapon(this.name, this.attacks, this.damage, this.accuracy, this.range, this.noise,
+            this.before,this.use,this.after,this.onSuccess, this.onFailure);
     }
 
 }

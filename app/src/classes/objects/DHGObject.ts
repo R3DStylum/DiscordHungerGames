@@ -1,5 +1,5 @@
 import { DHGPlayer } from "../actors/DHGPlayer";
-import { DHGManager } from "../DHGManager";
+import { DHGGameManager } from "../DHGGameManager";
 import { DHGWeapon, DHGWeaponTemplates } from "./DHGWeapon";
 import { DHGValidationError } from "../Errors/DHGValidationError";
 
@@ -11,13 +11,13 @@ export enum DHGObjectType {
     DRINK = 2,
 }
 
-export class DHGObject {
+export abstract class DHGObject {
 
     static allObjects:Map<number,DHGObject> = new Map<number,DHGObject>();
 
     id: number;
     name: string;
-    type: DHGObjectType = 0;
+    type: DHGObjectType = DHGObjectType.UNDETERMINED;
     hidden: boolean = false;
 
     constructor(name:string){
@@ -31,7 +31,7 @@ export class DHGObject {
     }
 }
 
-export class DHGObjectBuilder {
+export abstract class DHGObjectBuilder {
 
     name!:string;
     hidden: boolean = false;
@@ -44,15 +44,7 @@ export class DHGObjectBuilder {
         this.hidden = true;
     }
  
-    build():DHGObject{
-        if(this.name == undefined){
-            throw new DHGValidationError("Object needs name");
-        }else if(this.name.length < 1 || this.name.length > 32){
-            throw new DHGValidationError("Object name length needs to be between 1 and 32");
-        }
-
-        return new DHGObject(this.name);
-    }
+    abstract build():DHGObject;
 }
 
 export class DHGObjectTemplates {

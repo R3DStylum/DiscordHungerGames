@@ -1,18 +1,15 @@
 import { CategoryChannel, ChannelType, Guild, GuildMember, Role, TextChannel } from "discord.js";
 import { DHGObject } from "../objects/DHGObject";
-import { DHGManager } from "../DHGManager";
+import { DHGGameManager } from "../DHGGameManager";
 import { DHGError } from "../Errors/DHGError";
 import { DHGAction } from "../actions/DHGAction";
 import { DHGCell } from "../DHGCell";
 import { DHGWeapon } from "../objects/DHGWeapon";
+import { DHGActor, DHGState } from "./DHGActor";
 
-enum State {
-    ELIMINATED = -1,
-    DEAD = 0,
-    ALIVE = 1,
-}
 
-export class DHGPlayer{
+
+export class DHGPlayer extends DHGActor{
 
     static MAX_SATIETY = 18;
     static HUNGER_THRESHOLD = 6;
@@ -23,13 +20,12 @@ export class DHGPlayer{
     static MAX_INVENTORY = 7;
     static MAX_ACTIONS = 2;
 
-    id: string;
-    guild_id: string;
-    channel_name: string;
+    discordId: string;
+    channelName: string;
 
     location: DHGCell = DHGCell.nowhere;
     
-    state: State = State.ALIVE;
+    DHGState: DHGState = DHGState.ALIVE;
     district?:number;
     participantNumber?:number;
 
@@ -44,11 +40,11 @@ export class DHGPlayer{
     poison?: number;
     hemmorage?: boolean;
 
-    constructor(member:GuildMember, guild_id:string)
+    constructor(member:GuildMember)
     {
-        this.id = member.id;
-        this.channel_name = 'player-' + member.displayName;
-        this.guild_id = guild_id;
+        super(member.displayName);
+        this.discordId = member.id;
+        this.channelName = 'player-' + member.displayName;
 
         this.satiety = DHGPlayer.MAX_SATIETY;
         this.hydration = DHGPlayer.MAX_HYDRATION;
@@ -66,22 +62,26 @@ export class DHGPlayer{
             type:ChannelType.GuildText,
             parent: dhgplayerchannel,
         });
-        channel.permissionOverwrites.create(process.env.CLIENT_ID as string,{ViewChannel:true})
-        channel.permissionOverwrites.create(member.id,{ViewChannel:true})
-        channel.permissionOverwrites.create(everyoneRole,{ViewChannel:false})
-        return new DHGPlayer(member,guild.id);
+        channel.permissionOverwrites.create(process.env.CLIENT_ID as string,{ViewChannel:true});
+        channel.permissionOverwrites.create(member.id,{ViewChannel:true});
+        channel.permissionOverwrites.create(everyoneRole,{ViewChannel:false});
+        return new DHGPlayer(member);
+    }
+
+    static isPlayer(actor:DHGActor): actor is DHGPlayer{
+        return (actor as DHGPlayer).discordId !== undefined;
     }
 
     isAlive(){
-        return this.state === State.ALIVE;
+        return this.DHGState === DHGState.ALIVE;
     }
 
     isEliminated(){
-        return this.state === State.ELIMINATED || this.state === State.DEAD;
+        return this.DHGState === DHGState.ELIMINATED || this.DHGState === DHGState.DEAD;
     }
 
     isDead(){
-        return this.state === State.DEAD;
+        return this.DHGState === DHGState.DEAD;
     }
 
     isWounded(){
@@ -96,23 +96,14 @@ export class DHGPlayer{
         return (this.hydration <= DHGPlayer.THIRST_THRESHOLD);
     }
 
-    playerChannel():TextChannel | undefined{
-        const manager = DHGManager.getManagerByGuildId(this.guild_id);
-        if(manager !== undefined){
-            return manager.guild.channels.cache.find((channel) => {return channel.type === ChannelType.GuildText && channel.name === this.channel_name}) as TextChannel;
-        }else{
-            throw new DHGError('the channel for this player cannot be found. You can recreate it as text with name : ' + this.channel_name);
-        }
-    }
-
     publicInfo():string{
-        let desc = "<@" + this.id + "> from District " + this.district + ", participant no " + this.participantNumber + "\n";
-        desc += "State : ";
-        switch (this.state) {
-            case State.ALIVE:
+        let desc = "<@" + this.discordId + "> from District " + this.district + ", participant no " + this.participantNumber + "\n";
+        desc += "DHGState : ";
+        switch (this.DHGState) {
+            case DHGState.ALIVE:
                 desc += "alive\n";
                 break;
-            case State.DEAD:
+            case DHGState.DEAD:
                 desc += "dead\n";
                 break;
             default:
@@ -127,13 +118,13 @@ export class DHGPlayer{
     }
 
     selfInfo():string{
-        let desc = "<@" + this.id + "> from District " + this.district + ", participant no " + this.participantNumber + "\n";
-        desc += "State : ";
-        switch (this.state) {
-            case State.ALIVE:
+        let desc = "<@" + this.discordId + "> from District " + this.district + ", participant no " + this.participantNumber + "\n";
+        desc += "DHGState : ";
+        switch (this.DHGState) {
+            case DHGState.ALIVE:
                 desc += "alive\n";
                 break;
-            case State.DEAD:
+            case DHGState.DEAD:
                 desc += "dead\n";
                 break;
             default:
@@ -148,7 +139,7 @@ export class DHGPlayer{
         desc += "Held : " + (this.equipped != undefined ? `${this.equipped.name}` : "Nothing") + "\n";
         desc += "Inventory : ";
         for(let item of this.inventory){
-            desc += "[" + item.name + "]"
+            desc += "[" + item.name + "]";
         }
         desc += "\n";
 
@@ -161,14 +152,18 @@ export class DHGPlayer{
         return desc;
     }
 
+    getChannelName():string{
+        return this.channelName;
+    }
+
     canAttack(target:DHGPlayer){
-        if(this.state != State.ALIVE){return false;}
+        if(this.DHGState != DHGState.ALIVE){return false;}
         const weapon = (this.equipped != undefined ? this.equipped : DHGWeapon.defaultWeapon);
         return this.location.getNeighborsByRange(weapon.range).includes(target.location);
     }
 
     mention():string{
-        return "<@" + this.id + ">";
+        return "<@" + this.discordId + ">";
     }
 
     move(cell:DHGCell):void{
@@ -183,10 +178,10 @@ export class DHGPlayer{
     damage(damage:number){
         this.health -= damage;
         if(this.health <= 0){
-            this.state = State.DEAD;
+            this.DHGState = DHGState.DEAD;
         }
     }
-    attack(target:DHGPlayer, manager?:DHGManager){
+    attack(target:DHGActor, manager?:DHGGameManager):number{
         const weapon = (this.equipped != undefined ? this.equipped : DHGWeapon.defaultWeapon);
         return weapon.resolveAttack(this, target, manager);
     }
